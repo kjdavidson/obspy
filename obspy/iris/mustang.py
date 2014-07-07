@@ -9,13 +9,16 @@ Mustang client for ObsPy.
     GNU Lesser General Public License, Version 3
     (http://www.gnu.org/copyleft/lesser.html)
 """
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+from future.builtins import *  # NOQA
+from future.utils import native_str
+
 from collections import defaultdict, namedtuple
-from future import standard_library  # NOQA
 from future.builtins import str
 from future.utils import PY2, native_str
-from obspy import UTCDateTime, read_inventory
+from obspy import UTCDateTime
+
 
 def convert_to_string(value):
     """
@@ -53,7 +56,6 @@ def convert_to_string(value):
         return value
     else:
         raise TypeError("Unexpected type %s" % repr(value))
-
 
 
 QuerySelection = namedtuple("QuerySelection", ["name", "operation", "value"])
