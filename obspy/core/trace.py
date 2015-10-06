@@ -21,7 +21,7 @@ from copy import copy, deepcopy
 import numpy as np
 from decorator import decorator
 
-from obspy.core import compatibility
+from obspy.core import compatibility, provenance
 from obspy.core.utcdatetime import UTCDateTime
 from obspy.core.util import AttribDict, create_empty_data_chunk
 from obspy.core.util.base import _get_function_from_entry_point
@@ -220,32 +220,35 @@ class Stats(AttribDict):
 
 
 @decorator
-def _add_processing_info(func, *args, **kwargs):
+def _track_provenance(func, *args, **kwargs):
     """
     This is a decorator that attaches information about a processing call as a
-    string to the Trace.stats.processing list.
+    string to the Trace.stats.provenance list.
     """
     callargs = inspect.getcallargs(func, *args, **kwargs)
     callargs.pop("self")
     kwargs_ = callargs.pop("kwargs", {})
-    from obspy import __version__
-    info = "ObsPy {version}: {function}(%s)".format(
-        version=__version__,
-        function=func.__name__)
-    arguments = []
-    arguments += \
-        ["%s=%s" % (k, repr(v)) if not isinstance(v, native_str) else
-         "%s='%s'" % (k, v) for k, v in callargs.items()]
-    arguments += \
-        ["%s=%s" % (k, repr(v)) if not isinstance(v, native_str) else
-         "%s='%s'" % (k, v) for k, v in kwargs_.items()]
-    arguments.sort()
-    info = info % "::".join(arguments)
+
+    info = {
+        "function_name": func.__name__,
+        "arguments": {}
+    }
+
+    info["arguments"].update(callargs)
+    info["arguments"].update(kwargs_)
+
     self = args[0]
+
+    # Create an initial provenance record if none exists.
+    if "provenance" not in self.stats:
+        doc, current_id = provenance.create_prov_doc_for_trace(self)
+        self.stats.provenance = doc
+        self.stats.current_provenance_id = current_id
+
     result = func(*args, **kwargs)
     # Attach after executing the function to avoid having it attached
     # while the operation failed.
-    self._internal_add_processing_info(info)
+    self._add_provenance_step(info)
     return result
 
 
@@ -1089,7 +1092,7 @@ class Trace(object):
         self.data = self.data[:total]
         return self
 
-    @_add_processing_info
+    @_track_provenance
     def trim(self, starttime=None, endtime=None, pad=False,
              nearest_sample=True, fill_value=None):
         """
@@ -1309,7 +1312,7 @@ class Trace(object):
             raise Exception(msg)
         return self
 
-    @_add_processing_info
+    @_track_provenance
     def simulate(self, paz_remove=None, paz_simulate=None,
                  remove_sensitivity=True, simulate_sensitivity=True, **kwargs):
         """
@@ -1444,7 +1447,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
         return self
 
-    @_add_processing_info
+    @_track_provenance
     @raise_if_masked
     def filter(self, type, **options):
         """
@@ -1517,7 +1520,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         self.data = func(self.data, df=self.stats.sampling_rate, **options)
         return self
 
-    @_add_processing_info
+    @_track_provenance
     def trigger(self, type, **options):
         """
         Run a triggering algorithm on the data of the current trace.
@@ -1606,7 +1609,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         return self
 
     @skip_if_no_data
-    @_add_processing_info
+    @_track_provenance
     def resample(self, sampling_rate, window='hanning', no_filter=True,
                  strict_length=False):
         """
@@ -1726,7 +1729,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
         return self
 
-    @_add_processing_info
+    @_track_provenance
     def decimate(self, factor, no_filter=False, strict_length=False):
         """
         Downsample trace data by an integer factor.
@@ -1855,7 +1858,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         return self.data.std()
 
     @skip_if_no_data
-    @_add_processing_info
+    @_track_provenance
     def differentiate(self, method='gradient', **options):
         """
         Differentiate the trace with respect to time.
@@ -1890,7 +1893,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         return self
 
     @skip_if_no_data
-    @_add_processing_info
+    @_track_provenance
     def integrate(self, method="cumtrapz", **options):
         """
         Integrate the trace with respect to time.
@@ -1924,7 +1927,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
     @skip_if_no_data
     @raise_if_masked
-    @_add_processing_info
+    @_track_provenance
     def detrend(self, type='simple', **options):
         """
         Remove a trend from the trace.
@@ -2001,7 +2004,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         return self
 
     @skip_if_no_data
-    @_add_processing_info
+    @_track_provenance
     def taper(self, max_percentage, type='hann', max_length=None,
               side='both', **kwargs):
         """
@@ -2141,7 +2144,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         self.data *= taper
         return self
 
-    @_add_processing_info
+    @_track_provenance
     def normalize(self, norm=None):
         """
         Normalize the trace to its absolute maximum.
@@ -2232,13 +2235,13 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
         But they have equal data (before applying further processing):
 
-        >>> tr2 == tr
+        >>> tr2 == trSDF
         True
 
         The following example shows how to make an alias but not copy the
         data. Any changes on ``tr3`` would also change the contents of ``tr``.
 
-        >>> tr3 = tr
+        >>> tr3 = trUUUU
         >>> tr3 is tr
         True
         >>> tr3 == tr
@@ -2246,15 +2249,25 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         """
         return deepcopy(self)
 
-    def _internal_add_processing_info(self, info):
+    def _add_provenance_step(self, info):
         """
-        Add the given informational string to the `processing` field in the
-        trace's :class:`~obspy.core.trace.Stats` object.
+        Add a single provenance step to the Trace. If it does not yet exist,
+        create a provenance document.
         """
-        proc = self.stats.setdefault('processing', [])
-        proc.append(info)
+        if "provenance" not in self.stats or \
+                "current_provenance_id" not in self.stats:
+            raise ValueError("Trace must have a 'provenance' and a "
+                             "'current_provenance_id' stats attribute.")
 
-    @_add_processing_info
+        new_id = provenance.add_processing_step_to_prov(
+            doc=self.stats.provenance,
+            prev_id=self.stats.current_provenance_id,
+            new_trace=self,
+            info=info)
+
+        self.stats.current_provenance_id = new_id
+
+    @_track_provenance
     def split(self):
         """
         Split Trace object containing gaps using a NumPy masked array into
@@ -2292,7 +2305,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
     @skip_if_no_data
     @raise_if_masked
-    @_add_processing_info
+    @_track_provenance
     def interpolate(self, sampling_rate, method="weighted_average_slopes",
                     starttime=None, npts=None, time_shift=0.0,
                     *args, **kwargs):
@@ -2617,7 +2630,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         """
         self.stats.response = self._get_response(inventories)
 
-    @_add_processing_info
+    @_track_provenance
     def remove_response(self, inventory=None, output="VEL", water_level=60,
                         pre_filt=None, zero_mean=True, taper=True,
                         taper_fraction=0.05, plot=False, fig=None, **kwargs):
@@ -2933,6 +2946,11 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         """
         response = self._get_response(inventory)
         self.data = self.data / response.instrument_sensitivity.value
+        info = ":".join(["remove_response"] +
+                        [str(x) for x in (output, water_level, pre_filt,
+                                          zero_mean, taper, taper_fraction)] +
+                        ["%s=%s" % (k, v) for k, v in kwargs.items()])
+        self._add_provenance_step(info)
         return self
 
 
