@@ -362,6 +362,7 @@ ENTRY_POINTS = {
         'lowpass_cheby_2 = obspy.signal.filter:lowpass_cheby_2',
         'lowpassFIR = obspy.signal.filter:lowpass_FIR',
         'remezFIR = obspy.signal.filter:remez_FIR',
+        'gabor = obspy.signal.filter:gabor_filter',
         ],
     'obspy.plugin.interpolate': [
         'interpolate_1d = obspy.signal.interpolation:interpolate_1d',

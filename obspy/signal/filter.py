@@ -398,6 +398,61 @@ def lowpass_cheby_2(data, freq, df, maxorder=12, ba=False,
     return sosfilt(sos, data)
 
 
+def gabor_filter(data, df, freq, sigma=0.5, npad=0):
+    """
+    Gabor filter.
+
+    log-Gabor bandpass filtering (multiplication in the frequency domain by a
+    log-Gaussian window)
+
+    :param data: Data to filter.
+    :param freq: Central frequency.
+    :param df: Sampling rate in Hz.
+    :param sigma: sigma is the standard deviation of the Gaussian that
+    describes the log-Gabor filter in the *time* domain. Larger sigma means
+    narrower bandwidth.
+    :param npad: desired length of zero-padded time series. Choose
+        npad >= size(data,1).
+    :return: Filtered data.
+    """
+    # zero-pad data
+    if (not npad) or (npad < len(data)):
+        npad = len(data)
+
+    # internal (padded length) of each time series
+    nn = max(len(data), npad)
+    data = np.append(data, np.zeros(npad-len(data)))
+
+    # frequency axis
+    # freq resolution
+    df = float(df)/nn
+    f = df*np.arange(-nn/2., nn/2.)
+
+    # Temporarily get rid of the zero value in the middle
+    # so taking the log does not cause trouble.
+    if np.mod(nn, 2) == 0:
+        f[int(round(nn/2.+1))-1] = 1
+
+    lnf = np.log(abs(f)/freq)
+    lngabor = np.exp(-np.power(lnf, 2) / (2.*np.power(np.log(sigma), 2)))
+
+    # Undo the 0-->1 hack
+    if np.mod(nn, 2) == 0:
+        # bandpass filter has no DC component
+        lngabor[int(round(nn/2.))] = 0
+        f[int(round(nn/2.))] = 0
+
+    gb_filter = np.zeros(nn, dtype=np.complex)
+    gb_filter[0:nn] = np.fft.fftshift(lngabor)
+
+    tsfft = np.zeros(nn, dtype=np.complex)
+    tsfft[:] = np.fft.fft(data)
+
+    tsout = np.real(np.fft.ifft(tsfft*gb_filter))
+
+    return tsout
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(exclude_empty=True)
