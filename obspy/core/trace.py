@@ -220,10 +220,10 @@ class Stats(AttribDict):
 
 
 @decorator
-def _track_provenance(func, *args, **kwargs):
+def track_provenance(func, *args, **kwargs):
     """
     This is a decorator that attaches information about a processing call as a
-    string to the Trace.stats.provenance list.
+    string to the Trace.stats.provenance document.
     """
     callargs = inspect.getcallargs(func, *args, **kwargs)
     callargs.pop("self")
@@ -239,7 +239,7 @@ def _track_provenance(func, *args, **kwargs):
 
     self = args[0]
 
-    # Create an initial provenance record if none exists.
+    # Create an initial provenance record if it does not yet exist.
     if "provenance" not in self.stats:
         doc, current_id = provenance.create_prov_doc_for_trace(self)
         self.stats.provenance = doc
@@ -1092,7 +1092,7 @@ class Trace(object):
         self.data = self.data[:total]
         return self
 
-    @_track_provenance
+    @track_provenance
     def trim(self, starttime=None, endtime=None, pad=False,
              nearest_sample=True, fill_value=None):
         """
@@ -1312,7 +1312,7 @@ class Trace(object):
             raise Exception(msg)
         return self
 
-    @_track_provenance
+    @track_provenance
     def simulate(self, paz_remove=None, paz_simulate=None,
                  remove_sensitivity=True, simulate_sensitivity=True, **kwargs):
         """
@@ -1447,7 +1447,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
         return self
 
-    @_track_provenance
+    @track_provenance
     @raise_if_masked
     def filter(self, type, **options):
         """
@@ -1520,7 +1520,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         self.data = func(self.data, df=self.stats.sampling_rate, **options)
         return self
 
-    @_track_provenance
+    @track_provenance
     def trigger(self, type, **options):
         """
         Run a triggering algorithm on the data of the current trace.
@@ -1609,7 +1609,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         return self
 
     @skip_if_no_data
-    @_track_provenance
+    @track_provenance
     def resample(self, sampling_rate, window='hanning', no_filter=True,
                  strict_length=False):
         """
@@ -1729,7 +1729,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
         return self
 
-    @_track_provenance
+    @track_provenance
     def decimate(self, factor, no_filter=False, strict_length=False):
         """
         Downsample trace data by an integer factor.
@@ -1858,7 +1858,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         return self.data.std()
 
     @skip_if_no_data
-    @_track_provenance
+    @track_provenance
     def differentiate(self, method='gradient', **options):
         """
         Differentiate the trace with respect to time.
@@ -1893,7 +1893,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         return self
 
     @skip_if_no_data
-    @_track_provenance
+    @track_provenance
     def integrate(self, method="cumtrapz", **options):
         """
         Integrate the trace with respect to time.
@@ -1927,7 +1927,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
     @skip_if_no_data
     @raise_if_masked
-    @_track_provenance
+    @track_provenance
     def detrend(self, type='simple', **options):
         """
         Remove a trend from the trace.
@@ -2004,7 +2004,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         return self
 
     @skip_if_no_data
-    @_track_provenance
+    @track_provenance
     def taper(self, max_percentage, type='hann', max_length=None,
               side='both', **kwargs):
         """
@@ -2144,7 +2144,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         self.data *= taper
         return self
 
-    @_track_provenance
+    @track_provenance
     def normalize(self, norm=None):
         """
         Normalize the trace to its absolute maximum.
@@ -2267,7 +2267,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
         self.stats.current_provenance_id = new_id
 
-    @_track_provenance
+    @track_provenance
     def split(self):
         """
         Split Trace object containing gaps using a NumPy masked array into
@@ -2305,7 +2305,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
 
     @skip_if_no_data
     @raise_if_masked
-    @_track_provenance
+    @track_provenance
     def interpolate(self, sampling_rate, method="weighted_average_slopes",
                     starttime=None, npts=None, time_shift=0.0,
                     *args, **kwargs):
@@ -2630,10 +2630,10 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         """
         self.stats.response = self._get_response(inventories)
 
-    @_track_provenance
-    def remove_response(self, inventory=None, output="VEL", water_level=60,
-                        pre_filt=None, zero_mean=True, taper=True,
-                        taper_fraction=0.05, plot=False, fig=None, **kwargs):
+    @track_provenance
+    def remove_response(self, output="VEL", water_level=60, pre_filt=None,
+                        zero_mean=True, taper=True, taper_fraction=0.05,
+                        plot=False, **kwargs):
         """
         Deconvolve instrument response.
 
