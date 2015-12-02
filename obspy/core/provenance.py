@@ -21,6 +21,14 @@ import prov.model
 _CACHE = {}
 
 
+class SeisProvDocument(prov.model.ProvDocument):
+    """
+    SEIS-PROV document.
+    """
+    def plot(self):
+        prov.model.ProvDocument.plot(self, use_labels=True)
+
+
 def _get_definition():
     """
     Helper to not have to load it upon import.
@@ -83,9 +91,9 @@ def _create_activity(doc, info, step):
             name = "bandpass_filter"
             attributes["filter_type"] = "Butterworth"
             attributes["lower_corner_frequency"] = \
-                str(info["arguments"]["options"]["freqmin"])
+                float(info["arguments"]["options"]["freqmin"])
             attributes["upper_corner_frequency"] = \
-                str(info["arguments"]["options"]["freqmin"])
+                float(info["arguments"]["options"]["freqmax"])
             if "corners" in info["arguments"]["options"]:
                 attributes["filter_order"] = \
                     int(info["arguments"]["options"]["freqmin"])
@@ -152,11 +160,7 @@ def _get_obspy_agent(doc):
         elif "software_version" not in attribs or \
                 attribs["software_version"] != obspy.__version__:
             continue
-
-        print("Reusing agent")
         return agent
-
-    print("Creating New agent!")
 
     identifier = _get_identifier(record_type="agent", name="software_agent",
                                  step=0)
@@ -205,7 +209,7 @@ def trace2prov_entity(doc, trace, step=0):
 
 def create_prov_doc_for_trace(trace):
     # Create doc and default namespace.
-    doc =  prov.model.ProvDocument()
+    doc =  SeisProvDocument()
     doc.add_namespace(*NS_SEIS)
 
     entity = trace2prov_entity(doc, trace, step=1)

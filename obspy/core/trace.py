@@ -2241,7 +2241,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         The following example shows how to make an alias but not copy the
         data. Any changes on ``tr3`` would also change the contents of ``tr``.
 
-        >>> tr3 = trUUUU
+        >>> tr3 = tr
         >>> tr3 is tr
         True
         >>> tr3 == tr

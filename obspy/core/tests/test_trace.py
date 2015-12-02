@@ -25,15 +25,15 @@ class TraceTestCase(unittest.TestCase):
     Test suite for obspy.core.trace.Trace.
     """
     @staticmethod
-    def __remove_processing(tr):
+    def __remove_provenance(tr):
         """
-        Removes all processing information in the trace object.
+        Removes all provenance information in the trace object.
 
         Useful for testing.
         """
-        if "processing" not in tr.stats:
+        if "provenance" not in tr.stats:
             return
-        del tr.stats.processing
+        del tr.stats.provenance
 
     def test_init(self):
         """
@@ -612,8 +612,8 @@ class TraceTestCase(unittest.TestCase):
         tr_trim.trim(starttime=t2)
         self.assertEqual(tr_trim, tr.slice(starttime=t2))
         tr2 = tr.slice(starttime=t2, endtime=t4)
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         # test 2: only removing data at right side
@@ -621,50 +621,50 @@ class TraceTestCase(unittest.TestCase):
         tr_trim.trim(endtime=t3)
         self.assertEqual(tr_trim, tr.slice(endtime=t3))
         tr2 = tr.slice(starttime=t1, endtime=t3)
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         # test 3: not removing data at all
         tr_trim = tr_orig.copy()
         tr_trim.trim(starttime=t1, endtime=t4)
         tr2 = tr.slice()
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         tr2 = tr.slice(starttime=t1)
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         tr2 = tr.slice(endtime=t4)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         tr2 = tr.slice(starttime=t1, endtime=t4)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         tr_trim.trim()
         tr2 = tr.slice()
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         tr2 = tr.slice(starttime=t1)
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         tr2 = tr.slice(endtime=t4)
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         tr2 = tr.slice(starttime=t1, endtime=t4)
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         # test 4: removing data at left and right side
@@ -678,13 +678,13 @@ class TraceTestCase(unittest.TestCase):
         tr_trim.trim(starttime=t4)
 
         tr2 = tr.slice(starttime=t4)
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
         tr2 = tr.slice(starttime=t4, endtime=t4 + 1)
-        self.__remove_processing(tr_trim)
-        self.__remove_processing(tr2)
+        self.__remove_provenance(tr_trim)
+        self.__remove_provenance(tr2)
         self.assertEqual(tr_trim, tr2)
 
     def test_slice_nearest_sample(self):

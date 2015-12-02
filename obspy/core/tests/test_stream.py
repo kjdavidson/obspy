@@ -62,17 +62,16 @@ class StreamTestCase(unittest.TestCase):
             inspect.getfile(inspect.currentframe()))), "data")
 
     @staticmethod
-    def __remove_processing(st):
+    def __remove_provenance(st):
         """
-        Helper method removing the processing information from all traces
-        within a Stream object.
+        Removes all provenance information in each trace of the stream object.
 
         Useful for testing.
         """
         for tr in st:
-            if "processing" not in tr.stats:
+            if "provenance" not in tr.stats:
                 continue
-            del tr.stats.processing
+            del tr.stats.provenance
 
     def test_init(self):
         """
@@ -507,25 +506,25 @@ class StreamTestCase(unittest.TestCase):
         st_cut = read()
         # 1
         st_cut.cutout(t4, t4 + 10)
-        self.__remove_processing(st_cut)
+        self.__remove_provenance(st_cut)
         self.assertEqual(st, st_cut)
         # 2
         st_cut.cutout(t1 - 10, t1)
-        self.__remove_processing(st_cut)
+        self.__remove_provenance(st_cut)
         self.assertEqual(st, st_cut)
         # 3
         st_cut.cutout(t1, t2)
         st.trim(starttime=t2, nearest_sample=True)
-        self.__remove_processing(st_cut)
-        self.__remove_processing(st)
+        self.__remove_provenance(st_cut)
+        self.__remove_provenance(st)
         self.assertEqual(st, st_cut)
         # 4
         st = read()
         st_cut = read()
         st_cut.cutout(t3, t4)
         st.trim(endtime=t3, nearest_sample=True)
-        self.__remove_processing(st_cut)
-        self.__remove_processing(st)
+        self.__remove_provenance(st_cut)
+        self.__remove_provenance(st)
         self.assertEqual(st, st_cut)
         # 5
         st = read()
@@ -535,8 +534,8 @@ class StreamTestCase(unittest.TestCase):
         st += tmp
         st_cut = read()
         st_cut.cutout(t2, t3)
-        self.__remove_processing(st_cut)
-        self.__remove_processing(st)
+        self.__remove_provenance(st_cut)
+        self.__remove_provenance(st)
         self.assertEqual(st, st_cut)
 
     def test_pop2(self):
@@ -1746,9 +1745,9 @@ class StreamTestCase(unittest.TestCase):
         tr_02.data = np.concatenate([np.arange(5), tr_02.data])
         tr_02.stats.starttime -= 5 * delta
 
-        for _i in [tr1, tr2, tr3, tr4, tr5, tr6, tr_01, tr_02]:
-            if "processing" in _i.stats:
-                del _i.stats.processing
+        # Remove provenance from traces.
+        self.__remove_provenance([tr1, tr2, tr3, tr4, tr5, tr6, trO1,
+                                  trO2])
         # test mergeable traces (contained ones)
         for tr_b in [tr2, tr3, tr4]:
             tr_a = tr1.copy()
