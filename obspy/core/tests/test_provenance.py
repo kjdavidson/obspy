@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 
+import datetime
 import unittest
 
 import numpy as np
@@ -135,12 +136,89 @@ class ProvenanceTestCase(unittest.TestCase):
                                        "Taper", "Bandpass Filter")
 
     def test_trimming(self):
-        return
+        """
+        Test provenance tracking of a trimming operation.
+        """
         tr = obspy.read()[0]
         tr.stats.starttime = obspy.UTCDateTime(10)
+        tr.stats.sampling_rate = 1.0
 
+        # This will only cut.
+        tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(20))
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Cut")[0]), {
+                'label': 'Cut',
+                'new_start_time': obspy.UTCDateTime(20).datetime,
+                'new_end_time': tr.stats.endtime.datetime,
+                'type': 'seis_prov:activity'})
+        self.assertEqual(
+            self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
+
+        # Will only pad.
+        tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(0),
+                              endtime=obspy.UTCDateTime(5000),
+                              pad=True, fill_value=1.0)
+        self.assertEqual(
+            self._filter_records_label(tr_a.stats.provenance, "Cut"), [])
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Pad")[0]), {
+                'label': 'Pad',
+                'new_start_time': obspy.UTCDateTime(0).datetime,
+                'new_end_time': obspy.UTCDateTime(5000).datetime,
+                'fill_value': 1.0,
+                'type': 'seis_prov:activity'})
+
+        # Will do both. The internal implementation will always first cut
+        # and then pad but it does not really matter for the end results.
         tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(20),
-                              endtime=obspy.UTCDateTime(30))
+                              endtime=obspy.UTCDateTime(5000),
+                              pad=True, fill_value=10.0)
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Cut")[0]), {
+                'label': 'Cut',
+                'new_start_time': obspy.UTCDateTime(20).datetime,
+                'new_end_time': obspy.UTCDateTime(3009).datetime,
+                'type': 'seis_prov:activity'})
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Pad")[0]), {
+                'label': 'Pad',
+                'new_start_time': obspy.UTCDateTime(20).datetime,
+                'new_end_time': obspy.UTCDateTime(5000).datetime,
+                'fill_value': 10.0,
+                'type': 'seis_prov:activity'})
+        # Another variant of the same thing.
+        tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(0),
+                              endtime=obspy.UTCDateTime(50),
+                              pad=True, fill_value=12.0)
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Cut")[0]), {
+                'label': 'Cut',
+                'new_start_time': obspy.UTCDateTime(10).datetime,
+                'new_end_time': obspy.UTCDateTime(50).datetime,
+                'type': 'seis_prov:activity'})
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Pad")[0]), {
+                'label': 'Pad',
+                'new_start_time': obspy.UTCDateTime(0).datetime,
+                'new_end_time': obspy.UTCDateTime(50).datetime,
+                'fill_value': 12.0,
+                'type': 'seis_prov:activity'})
+
+        # Also nothing might be recorded if the operation did not do anything.
+        tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(0),
+                              endtime=obspy.UTCDateTime(5000),
+                              pad=False)
+        self.assertEqual(
+            self._filter_records_label(tr_a.stats.provenance, "Cut"), [])
+        self.assertEqual(
+            self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
+
 
     # def test_processing_information(self):
     #     """

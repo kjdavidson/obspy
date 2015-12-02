@@ -185,9 +185,37 @@ def _extract_detrend(info, state_before, state_after):
 
 
 def _extract_trim(info, state_before, state_after):
+    steps = []
     # This can potentially generate two separate activities: one cutting
     # activity and one padding activity.
-    return []
+
+    if state_before["starttime"] < state_after["starttime"] or \
+            state_before["endtime"] > state_after["endtime"]:
+        state = copy(state_before)
+        state["starttime"] = max(state_after["starttime"],
+                                 state_before["starttime"])
+        state["endtime"] = min(state_after["endtime"],
+                               state_before["endtime"])
+        attributes = {
+            "new_start_time": state["starttime"],
+            "new_end_time": state["endtime"]
+        }
+        steps.append(("cut", attributes, state))
+
+    if state_before["starttime"] > state_after["starttime"] or \
+                    state_before["endtime"] < state_after["endtime"]:
+        state = copy(state_before)
+        state["starttime"] = state_after["starttime"]
+        state["endtime"] = state_after["endtime"]
+
+        attributes = {
+            "new_start_time": state["starttime"],
+            "new_end_time": state["endtime"],
+            "fill_value": info["arguments"]["fill_value"]
+        }
+        steps.append(("pad", attributes, state))
+
+    return steps
 
 
 def _extract_taper(info, state_before, state_after):
@@ -255,8 +283,10 @@ def _create_activites(doc, info, previous_entity, state_before, state_after):
     step += 1
 
     items = FCT_MAP[fct_name](info, state_before, state_after)
-    if len(items) == 0:
-        raise ValueError("Each action has to create a provenance entry!")
+    # Operations might end up no-ops in which case no provenance should be
+    # recorded as nothing changed the data.
+    if not items:
+        return str(previous_entity.identifier)
 
     for name, attributes, state in items:
         definition = _get_definition_for_record(record_type="activity",
