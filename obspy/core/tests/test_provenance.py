@@ -135,7 +135,12 @@ class ProvenanceTestCase(unittest.TestCase):
                                        "Taper", "Bandpass Filter")
 
     def test_trimming(self):
+        return
         tr = obspy.read()[0]
+        tr.stats.starttime = obspy.UTCDateTime(10)
+
+        tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(20),
+                              endtime=obspy.UTCDateTime(30))
 
     # def test_processing_information(self):
     #     """

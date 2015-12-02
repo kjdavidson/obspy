@@ -159,22 +159,10 @@ def add_processing_step_to_prov(doc, prev_id, state_before, state_after,
     rec = [_i for _i in doc._records if str(_i.identifier) == prev_id]
     if not rec:
         raise ValueError("Could not find the record of the entity representing"
-                         "the previous state of the trace.")
-    previous_entity = rec[0]
+                         " the previous state of the trace.")
 
-    # Parse the identifier to extract the previous step number.
-    step = int(previous_entity.identifier.localpart.split("_")[0].strip("sp"))
-
-    entity = trace2prov_entity(doc=doc, trace=state_after, step=step + 2)
-
-    activity = _create_activity(doc=doc, info=info, step=step+1,
-                                state_before=state_before,
-                                state_after=state_after)
-
-    doc.usage(activity, previous_entity)
-    doc.generation(entity, activity)
-
-    return str(entity.identifier)
+    return _create_activites(doc=doc, info=info, previous_entity=rec[0],
+                             state_before=state_before, state_after=state_after)
 
 
 def get_record_for_id(doc, identifier):
@@ -188,29 +176,31 @@ def get_record_for_id(doc, identifier):
     pass
 
 
-def _extract_detrend(info, *args):
+def _extract_detrend(info, state_before, state_after):
     name = "detrend"
     attributes = {
         "detrending_method": str(info["arguments"]["type"])
     }
-    return name, attributes
+    return [(name, attributes, state_after)]
 
 
 def _extract_trim(info, state_before, state_after):
-    from IPython.core.debugger import Tracer; Tracer(colors="Linux")()
+    # This can potentially generate two separate activities: one cutting
+    # activity and one padding activity.
+    return []
 
 
-def _extract_taper(info, *args):
+def _extract_taper(info, state_before, state_after):
     name = "taper"
     attributes = {
         "window_type": str(info["arguments"]["type"]),
         "taper_width": float(info["arguments"]["max_percentage"]),
         "side": str(info["arguments"]["side"])
     }
-    return name, attributes
+    return [(name, attributes, state_after)]
 
 
-def _extract_filter(info, *args):
+def _extract_filter(info, state_before, state_after):
     attributes = {}
 
     filter_type = info["arguments"]["type"].lower()
@@ -230,7 +220,7 @@ def _extract_filter(info, *args):
     else:
         from IPython.core.debugger import Tracer; Tracer(colors="Linux")()
         raise NotImplementedError
-    return name, attributes
+    return [(name, attributes, state_after)]
 
 
 # Map the function names to function actually converting the information.
@@ -238,10 +228,11 @@ FCT_MAP = {
     "detrend": _extract_detrend,
     "taper": _extract_taper,
     "filter": _extract_filter,
+    "trim": _extract_trim
 }
 
 
-def _create_activity(doc, info, step, state_before, state_after):
+def _create_activites(doc, info, previous_entity, state_before, state_after):
     """
     This central function parses the info dictionary to a corresponding
     SEIS-PROV activity.
@@ -258,32 +249,48 @@ def _create_activity(doc, info, step, state_before, state_after):
 
     if fct_name not in FCT_MAP:
         raise NotImplementedError("Function %s" % fct_name)
-    name, attributes = FCT_MAP[fct_name](info, state_before, state_after)
 
-    definition = _get_definition_for_record(record_type="activity",
-                                            name=name)
-    identifier = _get_identifier(record_type="activity", name=name, step=step)
+    # Parse the identifier to extract the previous step number.
+    step = int(previous_entity.identifier.localpart.split("_")[0].strip("sp"))
+    step += 1
 
-    other_attributes = {
-        "prov:label": definition["label"],
-        "prov:type": "%s:%s" % (NS_PREFIX, definition["type"])
-    }
+    items = FCT_MAP[fct_name](info, state_before, state_after)
+    if len(items) == 0:
+        raise ValueError("Each action has to create a provenance entry!")
 
-    for key, value in attributes.items():
-        if isinstance(value, obspy.UTCDateTime):
-            new_value = prov.model.Literal(value.datetime,
-                                           prov.constants.XSD_DATETIME)
-        elif isinstance(value, bytes):
-            new_value= value.decode()
-        else:
-            new_value = value
-        other_attributes["%s:%s" % (NS_PREFIX, key)] = new_value
+    for name, attributes, state in items:
+        definition = _get_definition_for_record(record_type="activity",
+                                                name=name)
+        identifier = _get_identifier(record_type="activity", name=name,
+                                     step=step)
 
-    activity = doc.activity(identifier, other_attributes=other_attributes)
+        other_attributes = {
+            "prov:label": definition["label"],
+            "prov:type": "%s:%s" % (NS_PREFIX, definition["type"])
+        }
 
-    # Associate with ObsPy as ObsPy did it.
-    obspy_agent = _get_obspy_agent(doc)
-    doc.association(activity, obspy_agent)
+        for key, value in attributes.items():
+            if isinstance(value, obspy.UTCDateTime):
+                new_value = prov.model.Literal(value.datetime,
+                                               prov.constants.XSD_DATETIME)
+            elif isinstance(value, bytes):
+                new_value= value.decode()
+            else:
+                new_value = value
+            other_attributes["%s:%s" % (NS_PREFIX, key)] = new_value
 
-    return activity
+        activity = doc.activity(identifier, other_attributes=other_attributes)
+
+        # Associate with ObsPy as ObsPy did it.
+        obspy_agent = _get_obspy_agent(doc)
+        doc.association(activity, obspy_agent)
+
+        step += 1
+        entity = trace2prov_entity(doc=doc, trace=state_after, step=step)
+        step += 1
+
+        doc.usage(activity, previous_entity)
+        doc.generation(entity, activity)
+
+    return str(entity.identifier)
 
