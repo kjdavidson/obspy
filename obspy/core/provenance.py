@@ -2,6 +2,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 
+from copy import copy
 import json
 import os
 import uuid
@@ -122,15 +123,15 @@ def trace2prov_entity(doc, trace, step=0):
     return doc.entity(identifier, other_attributes=(
         ("prov:label", "Waveform Trace"),
         ("prov:type", "seis_prov:waveform_trace"),
-        ("seis_prov:seed_id", trace.id),
+        ("seis_prov:seed_id", trace["id"]),
         ("seis_prov:start_time",
-         prov.model.Literal(trace.stats.starttime.datetime,
+         prov.model.Literal(trace["starttime"].datetime,
                             prov.constants.XSD_DATETIME)),
         ("seis_prov:number_of_samples",
-         prov.model.Literal(trace.stats.npts,
+         prov.model.Literal(trace["npts"],
                             prov.constants.XSD_INT)),
         ("seis_prov:sampling_rate",
-         prov.model.Literal(trace.stats.sampling_rate,
+         prov.model.Literal(trace["sampling_rate"],
                             prov.constants.XSD_DOUBLE)),
     ))
 
@@ -140,12 +141,20 @@ def create_prov_doc_for_trace(trace):
     doc =  SeisProvDocument()
     doc.add_namespace(*NS_SEIS)
 
-    entity = trace2prov_entity(doc, trace, step=1)
+    entity = trace2prov_entity(
+        doc,
+        {"id": trace.id,
+         "npts": trace.stats.npts,
+         "starttime": copy(trace.stats.starttime),
+         "endtime": copy(trace.stats.endtime),
+         "sampling_rate": trace.stats.sampling_rate},
+        step=1)
 
     return doc, str(entity.identifier)
 
 
-def add_processing_step_to_prov(doc, prev_id, new_trace, info):
+def add_processing_step_to_prov(doc, prev_id, state_before, state_after,
+                                info):
     # Find the entity with the previous id.
     rec = [_i for _i in doc._records if str(_i.identifier) == prev_id]
     if not rec:
@@ -156,9 +165,11 @@ def add_processing_step_to_prov(doc, prev_id, new_trace, info):
     # Parse the identifier to extract the previous step number.
     step = int(previous_entity.identifier.localpart.split("_")[0].strip("sp"))
 
-    entity = trace2prov_entity(doc=doc, trace=new_trace, step=step + 2)
+    entity = trace2prov_entity(doc=doc, trace=state_after, step=step + 2)
 
-    activity = _create_activity(doc=doc, info=info, step=step+1)
+    activity = _create_activity(doc=doc, info=info, step=step+1,
+                                state_before=state_before,
+                                state_after=state_after)
 
     doc.usage(activity, previous_entity)
     doc.generation(entity, activity)
@@ -177,7 +188,7 @@ def get_record_for_id(doc, identifier):
     pass
 
 
-def _extract_detrend(info):
+def _extract_detrend(info, *args):
     name = "detrend"
     attributes = {
         "detrending_method": str(info["arguments"]["type"])
@@ -185,7 +196,11 @@ def _extract_detrend(info):
     return name, attributes
 
 
-def _extract_taper(info):
+def _extract_trim(info, state_before, state_after):
+    from IPython.core.debugger import Tracer; Tracer(colors="Linux")()
+
+
+def _extract_taper(info, *args):
     name = "taper"
     attributes = {
         "window_type": str(info["arguments"]["type"]),
@@ -195,7 +210,7 @@ def _extract_taper(info):
     return name, attributes
 
 
-def _extract_filter(info):
+def _extract_filter(info, *args):
     attributes = {}
 
     filter_type = info["arguments"]["type"].lower()
@@ -226,13 +241,16 @@ FCT_MAP = {
 }
 
 
-def _create_activity(doc, info, step):
+def _create_activity(doc, info, step, state_before, state_after):
     """
     This central function parses the info dictionary to a corresponding
     SEIS-PROV activity.
 
     :param doc: The provenance document to add the activity to.
     :param info: The info dictionary.
+    :param step: The sequential step number.
+    :param state_before: The Trace's state before the activity has acted.
+    :param state_after: The Trace's state after the activity has acted.
 
     :return: The newly created activity.
     """
@@ -240,7 +258,7 @@ def _create_activity(doc, info, step):
 
     if fct_name not in FCT_MAP:
         raise NotImplementedError("Function %s" % fct_name)
-    name, attributes = FCT_MAP[fct_name](info)
+    name, attributes = FCT_MAP[fct_name](info, state_before, state_after)
 
     definition = _get_definition_for_record(record_type="activity",
                                             name=name)

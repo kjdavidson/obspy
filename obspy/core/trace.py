@@ -13,6 +13,7 @@ from __future__ import (absolute_import, division, print_function,
 from future.builtins import *  # NOQA
 from future.utils import native_str
 
+import copy
 import inspect
 import math
 import warnings
@@ -245,10 +246,24 @@ def track_provenance(func, *args, **kwargs):
         self.stats.provenance = doc
         self.stats.current_provenance_id = current_id
 
+    s = args[0].stats
+    state_before = {
+        "id": args[0].id,
+        "npts": s.npts,
+        "starttime": copy(s.starttime),
+        "endtime": copy(s.endtime),
+        "sampling_rate": s.sampling_rate}
     result = func(*args, **kwargs)
+    s = args[0].stats
+    state_after = {
+        "id": args[0].id,
+        "npts": s.npts,
+        "starttime": copy(s.starttime),
+        "endtime": copy(s.endtime),
+        "sampling_rate": s.sampling_rate}
     # Attach after executing the function to avoid having it attached
     # while the operation failed.
-    self._add_provenance_step(info)
+    self._add_provenance_step(info, state_before, state_after)
     return result
 
 
@@ -2249,7 +2264,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         """
         return deepcopy(self)
 
-    def _add_provenance_step(self, info):
+    def _add_provenance_step(self, info, state_before, state_after):
         """
         Add a single provenance step to the Trace. If it does not yet exist,
         create a provenance document.
@@ -2262,7 +2277,8 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         new_id = provenance.add_processing_step_to_prov(
             doc=self.stats.provenance,
             prev_id=self.stats.current_provenance_id,
-            new_trace=self,
+            state_before=state_before,
+            state_after=state_after,
             info=info)
 
         self.stats.current_provenance_id = new_id
