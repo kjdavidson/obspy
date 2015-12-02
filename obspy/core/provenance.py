@@ -64,78 +64,6 @@ def _get_identifier(record_type, name, step):
                                 definition["two_letter_code"],
                                 uuid.uuid4().hex[:12])
 
-
-def _create_activity(doc, info, step):
-    """
-    This central function parses the info dictionary to a corresponding
-    SEIS-PROV activity.
-
-    :param doc: The provenance document to add the activity to.
-    :param info: The info dictionary.
-
-    :return: The newly created activity.
-    """
-    fct_name = info["function_name"]
-    attributes = {}
-    if fct_name == "detrend":
-        name = "detrend"
-        attributes["detrending_method"] = str(info["arguments"]["type"])
-    elif fct_name == "taper":
-        name = "taper"
-        attributes["window_type"] = str(info["arguments"]["type"])
-        attributes["taper_width"] = float(info["arguments"]["max_percentage"])
-        attributes["side"] = str(info["arguments"]["side"])
-    elif fct_name == "filter":
-        filter_type = info["arguments"]["type"].lower()
-        if filter_type == "bandpass":
-            name = "bandpass_filter"
-            attributes["filter_type"] = "Butterworth"
-            attributes["lower_corner_frequency"] = \
-                float(info["arguments"]["options"]["freqmin"])
-            attributes["upper_corner_frequency"] = \
-                float(info["arguments"]["options"]["freqmax"])
-            if "corners" in info["arguments"]["options"]:
-                attributes["filter_order"] = \
-                    int(info["arguments"]["options"]["freqmin"])
-            else:
-                # Hardcoded in ObsPy! Extract it somehow?
-                attributes["filter_order"] = 4
-        else:
-            from IPython.core.debugger import Tracer; Tracer(colors="Linux")()
-            raise NotImplementedError
-
-    else:
-        from IPython.core.debugger import Tracer; Tracer(colors="Linux")()
-        raise NotImplementedError
-
-    definition = _get_definition_for_record(record_type="activity",
-                                            name=name)
-    identifier = _get_identifier(record_type="activity", name=name, step=step)
-
-    other_attributes = {
-        "prov:label": definition["label"],
-        "prov:type": "%s:%s" % (NS_PREFIX, definition["type"])
-    }
-
-    for key, value in attributes.items():
-        if isinstance(value, obspy.UTCDateTime):
-            new_value = prov.model.Literal(value.datetime,
-                                           prov.constants.XSD_DATETIME)
-        elif isinstance(value, bytes):
-            new_value= value.decode()
-        else:
-            new_value = value
-        other_attributes["%s:%s" % (NS_PREFIX, key)] = new_value
-
-    activity = doc.activity(identifier, other_attributes=other_attributes)
-
-    # Associate with ObsPy as ObsPy did it.
-    obspy_agent = _get_obspy_agent(doc)
-    doc.association(activity, obspy_agent)
-
-    return activity
-
-
 def _get_obspy_agent(doc):
     """
     Return an agent representing ObsPy. This will be cached so its always the
@@ -247,3 +175,97 @@ def get_record_for_id(doc, identifier):
     :param identifier: The identifier to search for.
     """
     pass
+
+
+def _extract_detrend(info):
+    name = "detrend"
+    attributes = {
+        "detrending_method": str(info["arguments"]["type"])
+    }
+    return name, attributes
+
+
+def _extract_taper(info):
+    name = "taper"
+    attributes = {
+        "window_type": str(info["arguments"]["type"]),
+        "taper_width": float(info["arguments"]["max_percentage"]),
+        "side": str(info["arguments"]["side"])
+    }
+    return name, attributes
+
+
+def _extract_filter(info):
+    attributes = {}
+
+    filter_type = info["arguments"]["type"].lower()
+    if filter_type == "bandpass":
+        name = "bandpass_filter"
+        attributes["filter_type"] = "Butterworth"
+        attributes["lower_corner_frequency"] = \
+            float(info["arguments"]["options"]["freqmin"])
+        attributes["upper_corner_frequency"] = \
+            float(info["arguments"]["options"]["freqmax"])
+        if "corners" in info["arguments"]["options"]:
+            attributes["filter_order"] = \
+                int(info["arguments"]["options"]["freqmin"])
+        else:
+            # Hardcoded in ObsPy! Extract it somehow?
+            attributes["filter_order"] = 4
+    else:
+        from IPython.core.debugger import Tracer; Tracer(colors="Linux")()
+        raise NotImplementedError
+    return name, attributes
+
+
+# Map the function names to function actually converting the information.
+FCT_MAP = {
+    "detrend": _extract_detrend,
+    "taper": _extract_taper,
+    "filter": _extract_filter,
+}
+
+
+def _create_activity(doc, info, step):
+    """
+    This central function parses the info dictionary to a corresponding
+    SEIS-PROV activity.
+
+    :param doc: The provenance document to add the activity to.
+    :param info: The info dictionary.
+
+    :return: The newly created activity.
+    """
+    fct_name = info["function_name"]
+
+    if fct_name not in FCT_MAP:
+        raise NotImplementedError("Function %s" % fct_name)
+    name, attributes = FCT_MAP[fct_name](info)
+
+    definition = _get_definition_for_record(record_type="activity",
+                                            name=name)
+    identifier = _get_identifier(record_type="activity", name=name, step=step)
+
+    other_attributes = {
+        "prov:label": definition["label"],
+        "prov:type": "%s:%s" % (NS_PREFIX, definition["type"])
+    }
+
+    for key, value in attributes.items():
+        if isinstance(value, obspy.UTCDateTime):
+            new_value = prov.model.Literal(value.datetime,
+                                           prov.constants.XSD_DATETIME)
+        elif isinstance(value, bytes):
+            new_value= value.decode()
+        else:
+            new_value = value
+        other_attributes["%s:%s" % (NS_PREFIX, key)] = new_value
+
+    activity = doc.activity(identifier, other_attributes=other_attributes)
+
+    # Associate with ObsPy as ObsPy did it.
+    obspy_agent = _get_obspy_agent(doc)
+    doc.association(activity, obspy_agent)
+
+    return activity
+
