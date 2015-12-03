@@ -219,6 +219,36 @@ class ProvenanceTestCase(unittest.TestCase):
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
 
+    def test_mul_method(self):
+        """
+        This method just creates copies of all the traces.
+
+        Make sure they all contain the provenance information.
+        """
+        tr = obspy.read()[0]
+        tr.stats.starttime = obspy.UTCDateTime(0)
+        tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(1))
+        tr.trim(starttime=obspy.UTCDateTime(5))
+
+        self.assertNotEqual(tr.stats.provenance, tr_a.stats.provenance)
+
+        # Create a stream with 5 copies.
+        st = tr_a * 5
+
+        # They should all have the same provenance
+        for _tr in st:
+            self.assertEqual(_tr.stats.provenance, tr_a.stats.provenance)
+
+        # Make sure the provenance documents are independent.
+        st[2:].trim(starttime=obspy.UTCDateTime(10))
+        for _tr in st[:2]:
+            self.assertEqual(_tr.stats.provenance, tr_a.stats.provenance)
+        for _tr in st[2:]:
+            self.assertNotEqual(_tr.stats.provenance, tr_a.stats.provenance)
+        # Also just check the ids.
+        ids = set([id(_tr.stats.provenance) for _tr in st])
+        self.assertEqual(len(ids), 5)
+
 
     # def test_processing_information(self):
     #     """
