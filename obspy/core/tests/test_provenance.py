@@ -249,6 +249,22 @@ class ProvenanceTestCase(unittest.TestCase):
         ids = set([id(_tr.stats.provenance) for _tr in st])
         self.assertEqual(len(ids), 5)
 
+    def test_provenance_is_copied(self):
+        """
+        Tests that the provenance is copied and that the copies are
+        independent.
+        """
+        tr = obspy.read()[0]
+        tr.stats.starttime = obspy.UTCDateTime(0)
+        tr.trim(starttime=obspy.UTCDateTime(1))
+        tr_a = tr.copy()
+
+        ids = set([id(_tr.stats.provenance) for _tr in [tr, tr_a]])
+        self.assertEqual(len(ids), 2)
+
+        self.assertEqual(tr.stats.provenance, tr_a.stats.provenance)
+        tr_a.trim(starttime=obspy.UTCDateTime(10))
+        self.assertNotEqual(tr.stats.provenance, tr_a.stats.provenance)
 
     # def test_processing_information(self):
     #     """
