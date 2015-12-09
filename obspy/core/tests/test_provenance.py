@@ -3,14 +3,11 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
 
-import datetime
 import unittest
 
-import numpy as np
 import prov.model
 
 import obspy
-from obspy import Stream, Trace, UTCDateTime, __version__, read
 
 
 class ProvenanceTestCase(unittest.TestCase):
@@ -56,7 +53,7 @@ class ProvenanceTestCase(unittest.TestCase):
         self.assertEqual(attrs, {
             'website': 'http://www.obspy.org',
             'doi': '10.1785/gssrl.81.3.530',
-            'software_version': __version__,
+            'software_version': obspy.__version__,
             'type': 'SoftwareAgent',
             'software_name': 'ObsPy',
             'label': 'ObsPy'})
@@ -74,7 +71,6 @@ class ProvenanceTestCase(unittest.TestCase):
         self.assertEqual(len(second), 1)
 
         first = first[0]
-        second = second[0]
 
         # The initial activity generates an entity. Find that.
         entity = self._map_attributes([
@@ -107,9 +103,9 @@ class ProvenanceTestCase(unittest.TestCase):
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
                 tr.stats.provenance, "Detrend")[0]), {
-            'label': 'Detrend',
-            'detrending_method': 'linear',
-            'type': 'seis_prov:activity'})
+                'label': 'Detrend',
+                'detrending_method': 'linear',
+                'type': 'seis_prov:activity'})
 
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
@@ -218,7 +214,6 @@ class ProvenanceTestCase(unittest.TestCase):
             self._filter_records_label(tr_a.stats.provenance, "Cut"), [])
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
-
 
     def test_slicing(self):
         """

@@ -36,6 +36,8 @@ import json
 import os
 import uuid
 
+import prov.model
+
 import obspy
 
 
@@ -45,8 +47,6 @@ NS_SEIS = (NS_PREFIX, "http://seisprov.org/seis_prov/0.1/#")
 DEFINITION = os.path.join(os.path.dirname(__file__), "data",
                           "seis_prov_0_1.json")
 
-
-import prov.model
 
 _CACHE = {}
 
@@ -93,6 +93,7 @@ def _get_identifier(record_type, name, step):
     return "%s:sp%05i_%s_%s" % (NS_PREFIX, step,
                                 definition["two_letter_code"],
                                 uuid.uuid4().hex[:12])
+
 
 def _get_obspy_agent(doc):
     """
@@ -167,7 +168,7 @@ def trace2prov_entity(doc, trace, step=0):
 
 def create_prov_doc_for_trace(trace):
     # Create doc and default namespace.
-    doc =  SeisProvDocument()
+    doc = SeisProvDocument()
     doc.add_namespace(*NS_SEIS)
 
     entity = trace2prov_entity(
@@ -191,7 +192,8 @@ def add_processing_step_to_prov(doc, prev_id, state_before, state_after,
                          " the previous state of the trace.")
 
     return _create_activites(doc=doc, info=info, previous_entity=rec[0],
-                             state_before=state_before, state_after=state_after)
+                             state_before=state_before,
+                             state_after=state_after)
 
 
 def get_record_for_id(doc, identifier):
@@ -232,7 +234,7 @@ def _extract_trim(info, state_before, state_after):
         steps.append(("cut", attributes, state))
 
     if state_before["starttime"] > state_after["starttime"] or \
-                    state_before["endtime"] < state_after["endtime"]:
+            state_before["endtime"] < state_after["endtime"]:
         state = copy(state_before)
         state["starttime"] = state_after["starttime"]
         state["endtime"] = state_after["endtime"]
@@ -275,7 +277,6 @@ def _extract_filter(info, state_before, state_after):
             # Hardcoded in ObsPy! Extract it somehow?
             attributes["filter_order"] = 4
     else:
-        from IPython.core.debugger import Tracer; Tracer(colors="Linux")()
         raise NotImplementedError
     return [(name, attributes, state_after)]
 
@@ -333,7 +334,7 @@ def _create_activites(doc, info, previous_entity, state_before, state_after):
                 new_value = prov.model.Literal(value.datetime,
                                                prov.constants.XSD_DATETIME)
             elif isinstance(value, bytes):
-                new_value= value.decode()
+                new_value = value.decode()
             else:
                 new_value = value
             other_attributes["%s:%s" % (NS_PREFIX, key)] = new_value
@@ -352,4 +353,3 @@ def _create_activites(doc, info, previous_entity, state_before, state_after):
         doc.generation(entity, activity)
 
     return str(entity.identifier)
-
