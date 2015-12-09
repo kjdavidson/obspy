@@ -106,8 +106,8 @@ class ProvenanceTestCase(unittest.TestCase):
             self._map_attributes(self._filter_records_label(
                 tr.stats.provenance, "Detrend")[0]), {
                 'label': 'Detrend',
-                'detrending_method': 'linear',
-                'type': 'seis_prov:activity'})
+                'detrending_method': 'linear fit',
+                'type': 'seis_prov:detrend'})
 
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
@@ -116,7 +116,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'side': 'both',
                 'taper_width': 0.05,
                 'window_type': 'hann',
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:taper'})
 
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
@@ -126,7 +126,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'filter_order': 4,
                 'lower_corner_frequency': 0.1,
                 'upper_corner_frequency': 1.0,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:bandpass_filter'})
 
         self._assert_activity_sequence(tr.stats.provenance,
                                        "Detrend", "Taper")
@@ -149,7 +149,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'label': 'Cut',
                 'new_start_time': obspy.UTCDateTime(20).datetime,
                 'new_end_time': tr.stats.endtime.datetime,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:cut'})
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
 
@@ -166,7 +166,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'new_start_time': obspy.UTCDateTime(0).datetime,
                 'new_end_time': obspy.UTCDateTime(5000).datetime,
                 'fill_value': 1.0,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:pad'})
 
         # Will do both. The internal implementation will always first cut
         # and then pad but it does not really matter for the end results.
@@ -179,7 +179,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'label': 'Cut',
                 'new_start_time': obspy.UTCDateTime(20).datetime,
                 'new_end_time': obspy.UTCDateTime(3009).datetime,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:cut'})
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Pad")[0]), {
@@ -187,7 +187,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'new_start_time': obspy.UTCDateTime(20).datetime,
                 'new_end_time': obspy.UTCDateTime(5000).datetime,
                 'fill_value': 10.0,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:pad'})
         # Another variant of the same thing.
         tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(0),
                               endtime=obspy.UTCDateTime(50),
@@ -198,7 +198,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'label': 'Cut',
                 'new_start_time': obspy.UTCDateTime(10).datetime,
                 'new_end_time': obspy.UTCDateTime(50).datetime,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:cut'})
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Pad")[0]), {
@@ -206,7 +206,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'new_start_time': obspy.UTCDateTime(0).datetime,
                 'new_end_time': obspy.UTCDateTime(50).datetime,
                 'fill_value': 12.0,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:pad'})
 
         # Also nothing might be recorded if the operation did not do anything.
         tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(0),
@@ -235,7 +235,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'label': 'Cut',
                 'new_start_time': obspy.UTCDateTime(20).datetime,
                 'new_end_time': tr.stats.endtime.datetime,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:cut'})
         # Slicing cannot pad.
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
@@ -250,7 +250,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'label': 'Cut',
                 'new_start_time': obspy.UTCDateTime(20).datetime,
                 'new_end_time': obspy.UTCDateTime(3009).datetime,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:cut'})
         # Slicing cannot pad.
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
@@ -264,7 +264,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'label': 'Cut',
                 'new_start_time': obspy.UTCDateTime(10).datetime,
                 'new_end_time': obspy.UTCDateTime(50).datetime,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:cut'})
         # Slicing cannot pad.
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
@@ -531,7 +531,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 tr_a.stats.provenance, "Detrend")[0]), {
                 'label': 'Detrend',
                 'detrending_method': 'simple',
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:detrend'})
 
         tr_a = tr.copy().detrend("linear")
         doc = tr_a.stats.provenance
@@ -540,8 +540,8 @@ class ProvenanceTestCase(unittest.TestCase):
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Detrend")[0]), {
                 'label': 'Detrend',
-                'detrending_method': 'linear',
-                'type': 'seis_prov:activity'})
+                'detrending_method': 'linear fit',
+                'type': 'seis_prov:detrend'})
 
         tr_a = tr.copy().detrend("constant")
         doc = tr_a.stats.provenance
@@ -551,7 +551,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 tr_a.stats.provenance, "Detrend")[0]), {
                 'label': 'Detrend',
                 'detrending_method': 'demean',
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:detrend'})
 
         tr_a = tr.copy().detrend("demean")
         doc = tr_a.stats.provenance
@@ -561,7 +561,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 tr_a.stats.provenance, "Detrend")[0]), {
                 'label': 'Detrend',
                 'detrending_method': 'demean',
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:detrend'})
 
         tr_a = tr.copy().detrend("polynomial", order=5)
         doc = tr_a.stats.provenance
@@ -572,7 +572,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'label': 'Detrend',
                 'detrending_method': 'polynomial',
                 'polynomial_order': 5,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:detrend'})
 
         tr_a = tr.copy().detrend("spline", order=3, dspline=100)
         doc = tr_a.stats.provenance
@@ -584,7 +584,7 @@ class ProvenanceTestCase(unittest.TestCase):
                 'detrending_method': 'spline',
                 'spline_degree': 3,
                 'distance_between_spline_nodes_in_samples': 100,
-                'type': 'seis_prov:activity'})
+                'type': 'seis_prov:detrend'})
 
     # def test_processing_information(self):
     #     """

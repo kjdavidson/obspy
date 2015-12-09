@@ -249,6 +249,8 @@ def _extract_detrend(info, state_before, state_after):
     # Special case handling for some methods.
     if method == "constant":
         method = "demean"
+    elif method == "linear":
+        method = "linear fit"
     elif method == "polynomial":
         attributes["polynomial_order"] = info["arguments"]["options"]["order"]
     elif method == "spline":
@@ -372,7 +374,7 @@ def _create_activites(doc, info, previous_entity, state_before, state_after):
 
         other_attributes = {
             "prov:label": definition["label"],
-            "prov:type": "%s:%s" % (NS_PREFIX, definition["type"])
+            "prov:type": "%s:%s" % (NS_PREFIX, name)
         }
 
         for key, value in attributes.items():
