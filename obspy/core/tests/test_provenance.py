@@ -97,6 +97,8 @@ class ProvenanceTestCase(unittest.TestCase):
         tr.taper(0.05)
         tr.filter("bandpass", freqmin=0.1, freqmax=1.0)
 
+        tr.stats.provenance.validate()
+
         # Make sure it has all the required records.
         self._assert_has_obspy_agent(tr.stats.provenance)
 

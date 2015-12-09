@@ -32,6 +32,7 @@ from __future__ import (absolute_import, division, print_function,
 from future.builtins import *  # NOQA
 
 from copy import copy
+import io
 import json
 import os
 import uuid
@@ -51,12 +52,37 @@ DEFINITION = os.path.join(os.path.dirname(__file__), "data",
 _CACHE = {}
 
 
+class SeisProvValidationError(Exception):
+    pass
+
+
 class SeisProvDocument(prov.model.ProvDocument):
     """
     SEIS-PROV document.
     """
     def plot(self):
         prov.model.ProvDocument.plot(self, use_labels=True)
+
+    def validate(self):
+        """
+        Validate the SEIS-PROV document. Currently uses the official
+        seis-prov validator.
+        """
+        from seis_prov_validate import validate  # NOQA
+
+        with io.BytesIO() as fh:
+            self.serialize(fh, format="xml")
+            fh.seek(0, 0)
+            result = validate(fh)
+        if not result.is_valid:
+            if result.warnings:
+                msg += "Warnings:\n" + ", ".join(result.warnings) + "\n"
+            else:
+                msg = ""
+
+            msg += "Errors:\n" + ", ".join(result.errors)
+
+            raise SeisProvValidationError(msg)
 
 
 def _get_definition():
