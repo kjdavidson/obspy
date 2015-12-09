@@ -337,6 +337,7 @@ class ProvenanceTestCase(unittest.TestCase):
         for _tr in st:
             ids.append(id(_tr.stats.provenance))
 
+            self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
             self.assertEqual(len(cut), 1)
             cut = cut[0]
@@ -368,6 +369,7 @@ class ProvenanceTestCase(unittest.TestCase):
         for _tr in st:
             ids.append(id(_tr.stats.provenance))
 
+            self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
             # Make sure each has two provenance records this time around.
             self.assertEqual(len(cut), 2)
@@ -396,6 +398,7 @@ class ProvenanceTestCase(unittest.TestCase):
         for _tr in st:
             ids.append(id(_tr.stats.provenance))
 
+            self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
             self.assertEqual(len(cut), 1)
             cut = cut[0]
@@ -428,6 +431,7 @@ class ProvenanceTestCase(unittest.TestCase):
         for _tr in st:
             ids.append(id(_tr.stats.provenance))
 
+            self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
             # Make sure each has two provenance records this time around.
             self.assertEqual(len(cut), 2)
@@ -453,6 +457,7 @@ class ProvenanceTestCase(unittest.TestCase):
         for _tr in tr.slide(window_length=10.0, step=10.0):
             ids.append(id(_tr.stats.provenance))
 
+            self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
             self.assertEqual(len(cut), 1)
             cut = cut[0]
@@ -484,6 +489,7 @@ class ProvenanceTestCase(unittest.TestCase):
         for _tr in tr.slide(window_length=10.0, step=10.0):
             ids.append(id(_tr.stats.provenance))
 
+            self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
             # Make sure each has two provenance records this time around.
             self.assertEqual(len(cut), 2)
@@ -507,6 +513,76 @@ class ProvenanceTestCase(unittest.TestCase):
         self.assertEqual(tr.stats.provenance, tr_a.stats.provenance)
         tr_a.trim(starttime=obspy.UTCDateTime(10))
         self.assertNotEqual(tr.stats.provenance, tr_a.stats.provenance)
+
+    def test_detrend(self):
+        """
+        Tests the trace.detrend method.
+        """
+        tr = obspy.read()[0]
+
+        # Test the various detrending methods.
+        tr_a = tr.copy().detrend("simple")
+        doc = tr_a.stats.provenance
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Detrend")[0]), {
+                'label': 'Detrend',
+                'detrending_method': 'simple',
+                'type': 'seis_prov:activity'})
+
+        tr_a = tr.copy().detrend("linear")
+        doc = tr_a.stats.provenance
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Detrend")[0]), {
+                'label': 'Detrend',
+                'detrending_method': 'linear',
+                'type': 'seis_prov:activity'})
+
+        tr_a = tr.copy().detrend("constant")
+        doc = tr_a.stats.provenance
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Detrend")[0]), {
+                'label': 'Detrend',
+                'detrending_method': 'demean',
+                'type': 'seis_prov:activity'})
+
+        tr_a = tr.copy().detrend("demean")
+        doc = tr_a.stats.provenance
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Detrend")[0]), {
+                'label': 'Detrend',
+                'detrending_method': 'demean',
+                'type': 'seis_prov:activity'})
+
+        tr_a = tr.copy().detrend("polynomial", order=5)
+        doc = tr_a.stats.provenance
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Detrend")[0]), {
+                'label': 'Detrend',
+                'detrending_method': 'polynomial',
+                'polynomial_order': 5,
+                'type': 'seis_prov:activity'})
+
+        tr_a = tr.copy().detrend("spline", order=3, dspline=100)
+        doc = tr_a.stats.provenance
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Detrend")[0]), {
+                'label': 'Detrend',
+                'detrending_method': 'spline',
+                'spline_degree': 3,
+                'distance_between_spline_nodes_in_samples': 100,
+                'type': 'seis_prov:activity'})
 
     # def test_processing_information(self):
     #     """

@@ -209,9 +209,29 @@ def get_record_for_id(doc, identifier):
 
 def _extract_detrend(info, state_before, state_after):
     name = "detrend"
-    attributes = {
-        "detrending_method": str(info["arguments"]["type"])
-    }
+    method = str(info["arguments"]["type"])
+
+    # Make sure the method is allowed.
+    if method not in ("simple", "linear", "demean", "constant",
+                      "polynomial", "spline"):
+        raise NotImplementedError("Provenance tracking for the detrending "
+                                  "method '%s' is not yet implemented." % (
+                                      method))
+
+    attributes = {}
+
+    # Special case handling for some methods.
+    if method == "constant":
+        method = "demean"
+    elif method == "polynomial":
+        attributes["polynomial_order"] = info["arguments"]["options"]["order"]
+    elif method == "spline":
+        attributes["spline_degree"] = info["arguments"]["options"]["order"]
+        attributes["distance_between_spline_nodes_in_samples"] = \
+            info["arguments"]["options"]["dspline"]
+
+    attributes["detrending_method"] = method
+
     return [(name, attributes, state_after)]
 
 
