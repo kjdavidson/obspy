@@ -1,3 +1,32 @@
+# -*- coding: utf-8 -*-
+"""
+Module to track and store provenance for ObsPy waveform objects.
+
+:copyright:
+    The ObsPy Development Team (devs@obspy.org)
+:license:
+    GNU Lesser General Public License, Version 3
+    (http://www.gnu.org/copyleft/lesser.html)
+
+
+This module attempts to automatically track the data provenance for
+:class:`~obspy.core.trace.Trace` objects.
+
+.. rubric:: Caveats
+
+1. It only works for the :class:`~obspy.core.stream.Stream` and
+   :class:`~obspy.core.trace.Trace` methods included in ObsPy. External methods
+   might works but that depends on the specific implementation.
+2. Methods that return/work on views of the data, e.g.
+   :meth:`obspy.core.trace.Trace.slice`, have valid provenance immediately
+   after the operation. Afterwards there are multiple
+   :class:`~obspy.core.trace.Trace` objects that might contain the same data
+   but the provenance might diverge and thus no longer be valid.
+3. Direct manipulations of the data array are also not captured.
+
+If you feel like it does not capture something it really should, please
+contact the ObsPy developers.
+"""
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from future.builtins import *  # NOQA
