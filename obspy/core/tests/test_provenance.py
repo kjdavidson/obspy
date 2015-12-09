@@ -219,6 +219,80 @@ class ProvenanceTestCase(unittest.TestCase):
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
 
+
+    def test_slicing(self):
+        """
+        Tests the slicing of trace objects. This is very similar to trimming
+        but it does not generate a copy but only a view. The provenance will
+        be a copy though.
+        """
+        tr = obspy.read()[0]
+        tr.stats.starttime = obspy.UTCDateTime(10)
+        tr.stats.sampling_rate = 1.0
+
+        # This will only cut.
+        tr_a = tr.copy().slice(starttime=obspy.UTCDateTime(20))
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Cut")[0]), {
+                'label': 'Cut',
+                'new_start_time': obspy.UTCDateTime(20).datetime,
+                'new_end_time': tr.stats.endtime.datetime,
+                'type': 'seis_prov:activity'})
+        # Slicing cannot pad.
+        self.assertEqual(
+            self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
+
+        # Will do both. The internal implementation will always first cut
+        # and then pad but it does not really matter for the end results.
+        tr_a = tr.copy().slice(starttime=obspy.UTCDateTime(20),
+                               endtime=obspy.UTCDateTime(5000))
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Cut")[0]), {
+                'label': 'Cut',
+                'new_start_time': obspy.UTCDateTime(20).datetime,
+                'new_end_time': obspy.UTCDateTime(3009).datetime,
+                'type': 'seis_prov:activity'})
+        # Slicing cannot pad.
+        self.assertEqual(
+            self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
+
+        # Another variant of the same thing.
+        tr_a = tr.copy().slice(starttime=obspy.UTCDateTime(0),
+                               endtime=obspy.UTCDateTime(50))
+        self.assertEqual(
+            self._map_attributes(self._filter_records_label(
+                tr_a.stats.provenance, "Cut")[0]), {
+                'label': 'Cut',
+                'new_start_time': obspy.UTCDateTime(10).datetime,
+                'new_end_time': obspy.UTCDateTime(50).datetime,
+                'type': 'seis_prov:activity'})
+        # Slicing cannot pad.
+        self.assertEqual(
+            self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
+
+        # Also nothing might be recorded if the operation did not do anything.
+        tr_a = tr.copy().slice(starttime=obspy.UTCDateTime(0),
+                               endtime=obspy.UTCDateTime(5000))
+        self.assertEqual(
+            self._filter_records_label(tr_a.stats.provenance, "Cut"), [])
+        self.assertEqual(
+            self._filter_records_label(tr_a.stats.provenance, "Pad"), [])
+
+        # Trim once to generate some initial provenance.
+        tr2 = tr.copy().trim(starttime=obspy.UTCDateTime(15))
+        # Slice.
+        tr_a = tr2.slice(starttime=obspy.UTCDateTime(20))
+
+        # Make sure the resulting provenance is a different object.
+        self.assertFalse(tr2.stats.provenance is tr_a.stats.provenance)
+        # The first trace has only one cutting record, the second two.
+        self.assertEqual(
+            len(self._filter_records_label(tr2.stats.provenance, "Cut")), 1)
+        self.assertEqual(
+            len(self._filter_records_label(tr_a.stats.provenance, "Cut")), 2)
+
     def test_mul_method(self):
         """
         This method just creates copies of all the traces.
