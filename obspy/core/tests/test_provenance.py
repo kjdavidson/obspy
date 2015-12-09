@@ -435,6 +435,62 @@ class ProvenanceTestCase(unittest.TestCase):
         # 10 independent provenance objects.
         self.assertEqual(len(set(ids)), 10)
 
+    def test_slide_method(self):
+        """
+        Tests provenance capturing for the trace.slide method.
+        """
+        tr = obspy.read()[0]
+        tr.stats.starttime = obspy.UTCDateTime(0)
+        tr.stats.sampling_rate = 1.0
+        # Cut to 110 samples. Does not trigger provenance to be collected...
+        tr.data = tr.data[:110]
+
+        # Each of them should have one Cut provenance record.
+        ids = []
+        start_times = []
+        end_times = []
+
+        for _tr in tr.slide(window_length=10.0, step=10.0):
+            ids.append(id(_tr.stats.provenance))
+
+            cut = self._filter_records_label(_tr.stats.provenance, "Cut")
+            self.assertEqual(len(cut), 1)
+            cut = cut[0]
+
+            attrs = self._map_attributes(cut)
+            st = attrs["new_start_time"]
+            et = attrs["new_end_time"]
+            self.assertGreater(et, st)
+            start_times.append(st)
+            end_times.append(et)
+
+        # 10 independent provenance objects.
+        self.assertEqual(len(set(ids)), 10)
+
+        # Assert the times are monotonic.
+        self.assertEqual(start_times, sorted(start_times))
+        self.assertEqual(end_times, sorted(end_times))
+
+        # Another test with an already existing provenance record.
+        tr = obspy.read()[0]
+        tr.stats.starttime = obspy.UTCDateTime(0)
+        tr.stats.sampling_rate = 1.0
+        tr.trim(starttime=obspy.UTCDateTime(2))
+        # Cut to 110 samples. Does not trigger provenance to be collected...
+        tr.data = tr.data[:110]
+
+        ids = []
+
+        for _tr in tr.slide(window_length=10.0, step=10.0):
+            ids.append(id(_tr.stats.provenance))
+
+            cut = self._filter_records_label(_tr.stats.provenance, "Cut")
+            # Make sure each has two provenance records this time around.
+            self.assertEqual(len(cut), 2)
+
+        # 10 independent provenance objects.
+        self.assertEqual(len(set(ids)), 10)
+
     def test_provenance_is_copied(self):
         """
         Tests that the provenance is copied and that the copies are
