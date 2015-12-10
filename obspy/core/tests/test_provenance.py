@@ -143,6 +143,7 @@ class ProvenanceTestCase(unittest.TestCase):
 
         # This will only cut.
         tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(20))
+        tr_a.stats.provenance.validate()
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Cut")[0]), {
@@ -157,6 +158,7 @@ class ProvenanceTestCase(unittest.TestCase):
         tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(0),
                               endtime=obspy.UTCDateTime(5000),
                               pad=True, fill_value=1.0)
+        tr_a.stats.provenance.validate()
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Cut"), [])
         self.assertEqual(
@@ -173,6 +175,7 @@ class ProvenanceTestCase(unittest.TestCase):
         tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(20),
                               endtime=obspy.UTCDateTime(5000),
                               pad=True, fill_value=10.0)
+        tr_a.stats.provenance.validate()
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Cut")[0]), {
@@ -192,6 +195,7 @@ class ProvenanceTestCase(unittest.TestCase):
         tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(0),
                               endtime=obspy.UTCDateTime(50),
                               pad=True, fill_value=12.0)
+        tr_a.stats.provenance.validate()
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Cut")[0]), {
@@ -212,6 +216,7 @@ class ProvenanceTestCase(unittest.TestCase):
         tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(0),
                               endtime=obspy.UTCDateTime(5000),
                               pad=False)
+        tr_a.stats.provenance.validate()
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Cut"), [])
         self.assertEqual(
@@ -229,6 +234,7 @@ class ProvenanceTestCase(unittest.TestCase):
 
         # This will only cut.
         tr_a = tr.copy().slice(starttime=obspy.UTCDateTime(20))
+        tr_a.stats.provenance.validate()
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Cut")[0]), {
@@ -244,6 +250,7 @@ class ProvenanceTestCase(unittest.TestCase):
         # and then pad but it does not really matter for the end results.
         tr_a = tr.copy().slice(starttime=obspy.UTCDateTime(20),
                                endtime=obspy.UTCDateTime(5000))
+        tr_a.stats.provenance.validate()
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Cut")[0]), {
@@ -258,6 +265,7 @@ class ProvenanceTestCase(unittest.TestCase):
         # Another variant of the same thing.
         tr_a = tr.copy().slice(starttime=obspy.UTCDateTime(0),
                                endtime=obspy.UTCDateTime(50))
+        tr_a.stats.provenance.validate()
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Cut")[0]), {
@@ -272,6 +280,7 @@ class ProvenanceTestCase(unittest.TestCase):
         # Also nothing might be recorded if the operation did not do anything.
         tr_a = tr.copy().slice(starttime=obspy.UTCDateTime(0),
                                endtime=obspy.UTCDateTime(5000))
+        tr_a.stats.provenance.validate()
         self.assertEqual(
             self._filter_records_label(tr_a.stats.provenance, "Cut"), [])
         self.assertEqual(
@@ -279,8 +288,10 @@ class ProvenanceTestCase(unittest.TestCase):
 
         # Trim once to generate some initial provenance.
         tr2 = tr.copy().trim(starttime=obspy.UTCDateTime(15))
+        tr2.stats.provenance.validate()
         # Slice.
         tr_a = tr2.slice(starttime=obspy.UTCDateTime(20))
+        tr_a.stats.provenance.validate()
 
         # Make sure the resulting provenance is a different object.
         self.assertFalse(tr2.stats.provenance is tr_a.stats.provenance)
@@ -301,6 +312,9 @@ class ProvenanceTestCase(unittest.TestCase):
         tr_a = tr.copy().trim(starttime=obspy.UTCDateTime(1))
         tr.trim(starttime=obspy.UTCDateTime(5))
 
+        tr.stats.provenance.validate()
+        tr_a.stats.provenance.validate()
+
         self.assertNotEqual(tr.stats.provenance, tr_a.stats.provenance)
 
         # Create a stream with 5 copies.
@@ -309,13 +323,16 @@ class ProvenanceTestCase(unittest.TestCase):
         # They should all have the same provenance
         for _tr in st:
             self.assertEqual(_tr.stats.provenance, tr_a.stats.provenance)
+            _tr.stats.provenance.validate()
 
         # Make sure the provenance documents are independent.
         st[2:].trim(starttime=obspy.UTCDateTime(10))
         for _tr in st[:2]:
             self.assertEqual(_tr.stats.provenance, tr_a.stats.provenance)
+            _tr.stats.provenance.validate()
         for _tr in st[2:]:
             self.assertNotEqual(_tr.stats.provenance, tr_a.stats.provenance)
+            _tr.stats.provenance.validate()
         # Also just check the ids.
         ids = set([id(_tr.stats.provenance) for _tr in st])
         self.assertEqual(len(ids), 5)
@@ -337,6 +354,7 @@ class ProvenanceTestCase(unittest.TestCase):
         end_times = []
 
         for _tr in st:
+            _tr.stats.provenance.validate()
             ids.append(id(_tr.stats.provenance))
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
@@ -362,6 +380,7 @@ class ProvenanceTestCase(unittest.TestCase):
         tr = obspy.read()[0]
         tr.stats.starttime = obspy.UTCDateTime(0)
         tr.trim(starttime=obspy.UTCDateTime(2))
+        tr.stats.provenance.validate()
 
         st = tr / 10
 
@@ -369,6 +388,7 @@ class ProvenanceTestCase(unittest.TestCase):
         ids = []
 
         for _tr in st:
+            _tr.stats.provenance.validate()
             ids.append(id(_tr.stats.provenance))
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
@@ -398,6 +418,7 @@ class ProvenanceTestCase(unittest.TestCase):
         end_times = []
 
         for _tr in st:
+            _tr.stats.provenance.validate()
             ids.append(id(_tr.stats.provenance))
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
@@ -423,6 +444,7 @@ class ProvenanceTestCase(unittest.TestCase):
         tr = obspy.read()[0]
         tr.stats.starttime = obspy.UTCDateTime(0)
         tr.trim(starttime=obspy.UTCDateTime(2))
+        tr.stats.provenance.validate()
         tr.data = tr.data[:100]
 
         st = tr % 10
@@ -431,6 +453,7 @@ class ProvenanceTestCase(unittest.TestCase):
         ids = []
 
         for _tr in st:
+            _tr.stats.provenance.validate()
             ids.append(id(_tr.stats.provenance))
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
@@ -457,6 +480,7 @@ class ProvenanceTestCase(unittest.TestCase):
         end_times = []
 
         for _tr in tr.slide(window_length=10.0, step=10.0):
+            _tr.stats.provenance.validate()
             ids.append(id(_tr.stats.provenance))
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
@@ -483,12 +507,14 @@ class ProvenanceTestCase(unittest.TestCase):
         tr.stats.starttime = obspy.UTCDateTime(0)
         tr.stats.sampling_rate = 1.0
         tr.trim(starttime=obspy.UTCDateTime(2))
+        tr.stats.provenance.validate()
         # Cut to 110 samples. Does not trigger provenance to be collected...
         tr.data = tr.data[:110]
 
         ids = []
 
         for _tr in tr.slide(window_length=10.0, step=10.0):
+            _tr.stats.provenance.validate()
             ids.append(id(_tr.stats.provenance))
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
@@ -507,13 +533,16 @@ class ProvenanceTestCase(unittest.TestCase):
         tr = obspy.read()[0]
         tr.stats.starttime = obspy.UTCDateTime(0)
         tr.trim(starttime=obspy.UTCDateTime(1))
+        tr.stats.provenance.validate()
         tr_a = tr.copy()
+        tr_a.stats.provenance.validate()
 
         ids = set([id(_tr.stats.provenance) for _tr in [tr, tr_a]])
         self.assertEqual(len(ids), 2)
 
         self.assertEqual(tr.stats.provenance, tr_a.stats.provenance)
         tr_a.trim(starttime=obspy.UTCDateTime(10))
+        tr_a.stats.provenance.validate()
         self.assertNotEqual(tr.stats.provenance, tr_a.stats.provenance)
 
     def test_detrend(self):
@@ -525,6 +554,7 @@ class ProvenanceTestCase(unittest.TestCase):
         # Test the various detrending methods.
         tr_a = tr.copy().detrend("simple")
         doc = tr_a.stats.provenance
+        doc.validate()
         self._assert_has_obspy_agent(doc)
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
@@ -535,6 +565,7 @@ class ProvenanceTestCase(unittest.TestCase):
 
         tr_a = tr.copy().detrend("linear")
         doc = tr_a.stats.provenance
+        doc.validate()
         self._assert_has_obspy_agent(doc)
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
@@ -545,6 +576,7 @@ class ProvenanceTestCase(unittest.TestCase):
 
         tr_a = tr.copy().detrend("constant")
         doc = tr_a.stats.provenance
+        doc.validate()
         self._assert_has_obspy_agent(doc)
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
@@ -555,6 +587,7 @@ class ProvenanceTestCase(unittest.TestCase):
 
         tr_a = tr.copy().detrend("demean")
         doc = tr_a.stats.provenance
+        doc.validate()
         self._assert_has_obspy_agent(doc)
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
@@ -565,6 +598,7 @@ class ProvenanceTestCase(unittest.TestCase):
 
         tr_a = tr.copy().detrend("polynomial", order=5)
         doc = tr_a.stats.provenance
+        doc.validate()
         self._assert_has_obspy_agent(doc)
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
@@ -576,6 +610,7 @@ class ProvenanceTestCase(unittest.TestCase):
 
         tr_a = tr.copy().detrend("spline", order=3, dspline=100)
         doc = tr_a.stats.provenance
+        doc.validate()
         self._assert_has_obspy_agent(doc)
         self.assertEqual(
             self._map_attributes(self._filter_records_label(
