@@ -604,7 +604,7 @@ class ProvenanceTestCase(unittest.TestCase):
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Detrend")[0]), {
                 'label': 'Detrend',
-                'detrending_method': 'polynomial',
+                'detrending_method': 'polynomial fit',
                 'polynomial_order': 5,
                 'type': 'seis_prov:detrend'})
 
@@ -616,7 +616,7 @@ class ProvenanceTestCase(unittest.TestCase):
             self._map_attributes(self._filter_records_label(
                 tr_a.stats.provenance, "Detrend")[0]), {
                 'label': 'Detrend',
-                'detrending_method': 'spline',
+                'detrending_method': 'spline fit',
                 'spline_degree': 3,
                 'distance_between_spline_nodes_in_samples': 100,
                 'type': 'seis_prov:detrend'})

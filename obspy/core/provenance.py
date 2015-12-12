@@ -252,8 +252,10 @@ def _extract_detrend(info, state_before, state_after):
     elif method == "linear":
         method = "linear fit"
     elif method == "polynomial":
+        method = "polynomial fit"
         attributes["polynomial_order"] = info["arguments"]["options"]["order"]
     elif method == "spline":
+        method = "spline fit"
         attributes["spline_degree"] = info["arguments"]["options"]["order"]
         attributes["distance_between_spline_nodes_in_samples"] = \
             info["arguments"]["options"]["dspline"]
