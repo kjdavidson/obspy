@@ -309,6 +309,26 @@ def _extract_taper(info, state_before, state_after):
     return [(name, attributes, state_after)]
 
 
+def _extract_differentiate(info, state_before, state_after):
+    name = "differentiate"
+
+    method = info["arguments"]["method"].lower()
+
+    if method == "gradient":
+        method = "second order central differences"
+    else:
+        raise NotImplementedError("Method '%s' not known to the provenance "
+                                  "tracker for the trace differentiation." %
+                                  method)
+
+    attributes = {
+        "differentiation_method": method,
+        # Always first order.
+        "order": 1
+    }
+    return [(name, attributes, state_after)]
+
+
 def _extract_filter(info, state_before, state_after):
     attributes = {}
 
@@ -336,7 +356,8 @@ FCT_MAP = {
     "detrend": _extract_detrend,
     "taper": _extract_taper,
     "filter": _extract_filter,
-    "trim": _extract_trim
+    "trim": _extract_trim,
+    "differentiate": _extract_differentiate
 }
 
 

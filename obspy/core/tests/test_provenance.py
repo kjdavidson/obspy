@@ -621,6 +621,39 @@ class ProvenanceTestCase(unittest.TestCase):
                 'distance_between_spline_nodes_in_samples': 100,
                 'type': 'seis_prov:detrend'})
 
+    def test_differentiate(self):
+        """
+        Tests the trace.differentiate method.
+        """
+        tr = obspy.read()[0]
+        tr.differentiate(method="gradient")
+        doc = tr.stats.provenance
+        doc.validate()
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+                self._map_attributes(self._filter_records_label(
+                        doc, "Differentiate")[0]), {
+                    'label': 'Differentiate',
+                    'differentiation_method':
+                        'second order central differences',
+                    'order': 1,
+                    'type': 'seis_prov:differentiate'})
+
+        # Test the default value.
+        tr = obspy.read()[0]
+        tr.differentiate()
+        doc = tr.stats.provenance
+        doc.validate()
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+                self._map_attributes(self._filter_records_label(
+                        doc, "Differentiate")[0]), {
+                    'label': 'Differentiate',
+                    'differentiation_method':
+                        'second order central differences',
+                    'order': 1,
+                    'type': 'seis_prov:differentiate'})
+
     # def test_processing_information(self):
     #     """
     #     Test case for the automatic processing information.

@@ -1215,6 +1215,8 @@ class Trace(object):
         """
         tr = copy(self)
         tr.stats = deepcopy(self.stats)
+        if hasattr(self.stats, "provenance"):
+            tr.stats.provenance = deepcopy(self.stats.provenance)
         tr.trim(starttime=starttime, endtime=endtime,
                 nearest_sample=nearest_sample)
         return tr
