@@ -329,6 +329,32 @@ def _extract_differentiate(info, state_before, state_after):
     return [(name, attributes, state_after)]
 
 
+def _extract_integrate(info, state_before, state_after):
+    name = "integrate"
+
+    method = info["arguments"]["method"].lower()
+
+    if method == "cumtrapz":
+        method = "trapezoidal rule"
+        extra_args = {}
+    elif method == "spline":
+        method = "interpolating spline"
+        extra_args = {"spline_degree": int(info["arguments"]["options"]["k"])}
+    else:
+        raise NotImplementedError("Method '%s' not known to the provenance "
+                                  "tracker for the trace integration." %
+                                  method)
+
+    attributes = {
+        "integration_method": method,
+        # Always first order.
+        "order": 1
+    }
+    attributes.update(extra_args)
+
+    return [(name, attributes, state_after)]
+
+
 def _extract_filter(info, state_before, state_after):
     attributes = {}
 
@@ -357,7 +383,8 @@ FCT_MAP = {
     "taper": _extract_taper,
     "filter": _extract_filter,
     "trim": _extract_trim,
-    "differentiate": _extract_differentiate
+    "differentiate": _extract_differentiate,
+    "integrate": _extract_integrate
 }
 
 

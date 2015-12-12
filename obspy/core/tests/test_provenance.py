@@ -654,7 +654,56 @@ class ProvenanceTestCase(unittest.TestCase):
                     'order': 1,
                     'type': 'seis_prov:differentiate'})
 
-    # def test_processing_information(self):
+    def test_integration(self):
+        """
+        Tests provenance collections for the trace.integration method.
+        """
+        # Test the default value.
+        tr = obspy.read()[0]
+        tr.integrate()
+        doc = tr.stats.provenance
+        doc.validate()
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+                self._map_attributes(self._filter_records_label(
+                        doc, "Integrate")[0]), {
+                    'label': 'Integrate',
+                    'integration_method': 'trapezoidal rule',
+                    'order': 1,
+                    'type': 'seis_prov:integrate'})
+
+        # Test cumtrapz method.
+        tr = obspy.read()[0]
+        tr.integrate(method="cumtrapz")
+        doc = tr.stats.provenance
+        doc.validate()
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+                self._map_attributes(self._filter_records_label(
+                        doc, "Integrate")[0]), {
+                    'label': 'Integrate',
+                    'integration_method': 'trapezoidal rule',
+                    'order': 1,
+                    'type': 'seis_prov:integrate'})
+
+        # Test the spline method.
+        tr = obspy.read()[0]
+        tr.integrate(method="spline", k=2)
+        doc = tr.stats.provenance
+        doc.validate()
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+                self._map_attributes(self._filter_records_label(
+                        doc, "Integrate")[0]), {
+                    'label': 'Integrate',
+                    'integration_method': 'interpolating spline',
+                    'order': 1,
+                    'spline_degree': 2,
+                    'type': 'seis_prov:integrate'})
+
+
+
+        # def test_processing_information(self):
     #     """
     #     Test case for the automatic processing information.
     #     """
