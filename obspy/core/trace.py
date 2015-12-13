@@ -836,6 +836,7 @@ class Trace(object):
         out.data = data
         return out
 
+    @track_provenance
     def multiply(self, factor):
         """
         In-place multiplication of this Trace's data with a factor.
@@ -855,6 +856,7 @@ class Trace(object):
         self.data *= factor
         return self
 
+    @track_provenance
     def divide(self, factor):
         """
         In-place division of this Trace's data with a factor.
