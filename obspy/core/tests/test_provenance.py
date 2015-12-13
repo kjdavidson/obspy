@@ -355,7 +355,10 @@ class ProvenanceTestCase(unittest.TestCase):
 
         for _tr in st:
             _tr.stats.provenance.validate()
-            ids.append(id(_tr.stats.provenance))
+            # Collect full documents so they are not garbage collected and
+            # ids are not repeated which might otherwise happen randomly
+            # when running the tests.
+            ids.append(_tr.stats.provenance)
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
@@ -370,7 +373,7 @@ class ProvenanceTestCase(unittest.TestCase):
             end_times.append(et)
 
         # 10 independent provenance objects.
-        self.assertEqual(len(set(ids)), 10)
+        self.assertEqual(len(set([id(_i) for _i in ids])), 10)
 
         # Assert the times are monotonic.
         self.assertEqual(start_times, sorted(start_times))
@@ -389,7 +392,10 @@ class ProvenanceTestCase(unittest.TestCase):
 
         for _tr in st:
             _tr.stats.provenance.validate()
-            ids.append(id(_tr.stats.provenance))
+            # Collect full documents so they are not garbage collected and
+            # ids are not repeated which might otherwise happen randomly
+            # when running the tests.
+            ids.append(_tr.stats.provenance)
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
@@ -397,7 +403,7 @@ class ProvenanceTestCase(unittest.TestCase):
             self.assertEqual(len(cut), 2)
 
         # 10 independent provenance objects.
-        self.assertEqual(len(set(ids)), 10)
+        self.assertEqual(len(set([id(_i) for _i in ids])), 10)
 
     def test_mod_method(self):
         """
@@ -419,7 +425,10 @@ class ProvenanceTestCase(unittest.TestCase):
 
         for _tr in st:
             _tr.stats.provenance.validate()
-            ids.append(id(_tr.stats.provenance))
+            # Collect full documents so they are not garbage collected and
+            # ids are not repeated which might otherwise happen randomly
+            # when running the tests.
+            ids.append(_tr.stats.provenance)
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
@@ -434,7 +443,7 @@ class ProvenanceTestCase(unittest.TestCase):
             end_times.append(et)
 
         # 10 independent provenance objects.
-        self.assertEqual(len(set(ids)), 10)
+        self.assertEqual(len(set([id(_i) for _i in ids])), 10)
 
         # Assert the times are monotonic.
         self.assertEqual(start_times, sorted(start_times))
@@ -454,7 +463,10 @@ class ProvenanceTestCase(unittest.TestCase):
 
         for _tr in st:
             _tr.stats.provenance.validate()
-            ids.append(id(_tr.stats.provenance))
+            # Collect full documents so they are not garbage collected and
+            # ids are not repeated which might otherwise happen randomly
+            # when running the tests.
+            ids.append(_tr.stats.provenance)
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
@@ -462,7 +474,7 @@ class ProvenanceTestCase(unittest.TestCase):
             self.assertEqual(len(cut), 2)
 
         # 10 independent provenance objects.
-        self.assertEqual(len(set(ids)), 10)
+        self.assertEqual(len(set([id(_i) for _i in ids])), 10)
 
     def test_slide_method(self):
         """
@@ -481,7 +493,10 @@ class ProvenanceTestCase(unittest.TestCase):
 
         for _tr in tr.slide(window_length=10.0, step=10.0):
             _tr.stats.provenance.validate()
-            ids.append(id(_tr.stats.provenance))
+            # Collect full documents so they are not garbage collected and
+            # ids are not repeated which might otherwise happen randomly
+            # when running the tests.
+            ids.append(_tr.stats.provenance)
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
@@ -496,7 +511,7 @@ class ProvenanceTestCase(unittest.TestCase):
             end_times.append(et)
 
         # 10 independent provenance objects.
-        self.assertEqual(len(set(ids)), 10)
+        self.assertEqual(len(set([id(_i) for _i in ids])), 10)
 
         # Assert the times are monotonic.
         self.assertEqual(start_times, sorted(start_times))
@@ -515,7 +530,10 @@ class ProvenanceTestCase(unittest.TestCase):
 
         for _tr in tr.slide(window_length=10.0, step=10.0):
             _tr.stats.provenance.validate()
-            ids.append(id(_tr.stats.provenance))
+            # Collect full documents so they are not garbage collected and
+            # ids are not repeated which might otherwise happen randomly
+            # when running the tests.
+            ids.append(_tr.stats.provenance)
 
             self._assert_has_obspy_agent(_tr.stats.provenance)
             cut = self._filter_records_label(_tr.stats.provenance, "Cut")
@@ -523,7 +541,7 @@ class ProvenanceTestCase(unittest.TestCase):
             self.assertEqual(len(cut), 2)
 
         # 10 independent provenance objects.
-        self.assertEqual(len(set(ids)), 10)
+        self.assertEqual(len(set([id(_i) for _i in ids])), 10)
 
     def test_provenance_is_copied(self):
         """

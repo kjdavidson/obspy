@@ -76,7 +76,7 @@ class SeisProvDocument(prov.model.ProvDocument):
             result = validate(fh)
         if not result.is_valid:
             if result.warnings:
-                msg += "Warnings:\n" + ", ".join(result.warnings) + "\n"
+                msg = "Warnings:\n" + ", ".join(result.warnings) + "\n"
             else:
                 msg = ""
 
