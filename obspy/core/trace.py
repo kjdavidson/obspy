@@ -836,6 +836,44 @@ class Trace(object):
         out.data = data
         return out
 
+    def multiply(self, factor):
+        """
+        In-place multiplication of this Trace's data with a factor.
+
+        :type factor: float
+        :param factor: The multiplication factor.
+
+        .. rubric:: Example
+
+        >>> tr = Trace(data=np.array([0.0, -3.0, 9.0]))
+        >>> tr.data
+        array([ 0., -3.,  9.])
+        >>> tr.multiply(2)
+        >>> tr.data
+        array([  0.,  -6.,  18.])
+        """
+        self.data *= factor
+        return self
+
+    def divide(self, factor):
+        """
+        In-place division of this Trace's data with a factor.
+
+        :type factor: float
+        :param factor: The division factor.
+
+        .. rubric:: Example
+
+        >>> tr = Trace(data=np.array([0.0, -3.0, 9.0]))
+        >>> tr.data
+        array([ 0., -3.,  9.])
+        >>> tr.divide(2)
+        >>> tr.data
+        array([ 0. , -1.5,  4.5])
+        """
+        self.data /= factor
+        return self
+
     def get_id(self):
         """
         Return a SEED compatible identifier of the trace.

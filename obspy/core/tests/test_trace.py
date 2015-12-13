@@ -100,6 +100,24 @@ class TraceTestCase(unittest.TestCase):
         self.assertRaises(TypeError, tr.__div__, 2.5)
         self.assertRaises(TypeError, tr.__div__, '1234')
 
+    def test_multiply(self):
+        """
+        Tests the multiply() method of the Trace class.
+        """
+        tr = Trace(data=np.arange(10, dtype=np.float32))
+        org_data = tr.data.copy()
+        tr.multiply(5.0)
+        np.testing.assert_allclose(org_data * 5.0, tr.data)
+
+    def test_divide(self):
+        """
+        Tests the divide() method of the Trace class.
+        """
+        tr = Trace(data=np.arange(10, dtype=np.float32))
+        org_data = tr.data.copy()
+        tr.divide(5.0)
+        np.testing.assert_allclose(org_data / 5.0, tr.data)
+
     def test_ltrim(self):
         """
         Tests the ltrim method of the Trace class.
