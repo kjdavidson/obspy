@@ -377,6 +377,30 @@ def _extract_filter(info, state_before, state_after):
     return [(name, attributes, state_after)]
 
 
+def _extract_normalize(info, state_before, state_after):
+    name = "normalize"
+    attributes = {
+        "normalization_method": "Amplitude"
+    }
+    return [(name, attributes, state_after)]
+
+
+def _extract_multiply(info, state_before, state_after):
+    name = "multiply"
+    attributes = {
+        "factor": info["arguments"]["factor"]
+    }
+    return [(name, attributes, state_after)]
+
+
+def _extract_divide(info, state_before, state_after):
+    name = "divide"
+    attributes = {
+        "factor": info["arguments"]["factor"]
+    }
+    return [(name, attributes, state_after)]
+
+
 # Map the function names to function actually converting the information.
 FCT_MAP = {
     "detrend": _extract_detrend,
@@ -384,7 +408,10 @@ FCT_MAP = {
     "filter": _extract_filter,
     "trim": _extract_trim,
     "differentiate": _extract_differentiate,
-    "integrate": _extract_integrate
+    "integrate": _extract_integrate,
+    "normalize": _extract_normalize,
+    "multiply": _extract_multiply,
+    "divide": _extract_divide
 }
 
 

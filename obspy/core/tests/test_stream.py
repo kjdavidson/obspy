@@ -2664,6 +2664,34 @@ class StreamTestCase(unittest.TestCase):
         for tr in st:
             np.testing.assert_allclose(org_data / 5.0, tr.data)
 
+    def test_normalize(self):
+        """
+        Tests the normalize method of stream objects.
+        """
+        # Default normalize.
+        st = Stream(traces=[
+                    Trace(data=np.array([0.1, 0.2, 0.5])),
+                    Trace(data=np.array([1.0, 1.0, 1.0]))])
+        st.normalize()
+        np.testing.assert_allclose(
+            st[0].data,
+            np.array([0.2, 0.4, 1.0]))
+        np.testing.assert_allclose(
+                st[1].data,
+                np.array([1.0, 1.0, 1.0]))
+
+        # Global max normalize.
+        st = Stream(traces=[
+                    Trace(data=np.array([0.1, 0.2, 0.5])),
+                    Trace(data=np.array([1.0, 1.0, 1.0]))])
+        st.normalize(global_max=True)
+        np.testing.assert_allclose(
+                st[0].data,
+                np.array([0.1, 0.2, 0.5]))
+        np.testing.assert_allclose(
+                st[1].data,
+                np.array([1.0, 1.0, 1.0]))
+
 
 def suite():
     return unittest.makeSuite(StreamTestCase, 'test')

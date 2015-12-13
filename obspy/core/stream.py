@@ -2610,11 +2610,11 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         # use the same value for normalization on all traces?
         if global_max:
             norm = max([abs(value) for value in self.max()])
+            for tr in self:
+                tr.divide(norm)
         else:
-            norm = None
-        # normalize all traces
-        for tr in self:
-            tr.normalize(norm=norm)
+            for tr in self:
+                tr.normalize()
         return self
 
     def rotate(self, method, back_azimuth=None, inclination=None,
