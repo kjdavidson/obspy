@@ -2630,6 +2630,40 @@ class StreamTestCase(unittest.TestCase):
             self.assertEqual(e.exception.args[0],
                              'Can not write empty stream to file.')
 
+    def test_multiply(self):
+        """
+        Tests the multiply() method of the Stream class.
+        """
+        traces = []
+        for _ in range(5):
+            tr = Trace(data=np.arange(10, dtype=np.float32))
+            traces.append(tr)
+
+        st = Stream(traces=traces)
+        org_data = st[0].data.copy()
+
+        st.multiply(5.0)
+
+        for tr in st:
+            np.testing.assert_allclose(org_data * 5.0, tr.data)
+
+    def test_divide(self):
+        """
+        Tests the divide() method of the Stream class.
+        """
+        traces = []
+        for _ in range(5):
+            tr = Trace(data=np.arange(10, dtype=np.float32))
+            traces.append(tr)
+
+        st = Stream(traces=traces)
+        org_data = st[0].data.copy()
+
+        st.divide(5.0)
+
+        for tr in st:
+            np.testing.assert_allclose(org_data / 5.0, tr.data)
+
 
 def suite():
     return unittest.makeSuite(StreamTestCase, 'test')

@@ -676,6 +676,32 @@ class Stream(object):
         # see also https://docs.python.org/3/reference/datamodel.html
         return self.__class__(traces=self.traces[max(0, i):max(0, j):k])
 
+    def multiply(self, factor):
+        """
+        In-place multiplication of all Traces' data with a factor.
+
+        Simply applies :meth:`obspy.core.trace.Trace.multiply` to all Traces.
+
+        :type factor: float
+        :param factor: The multiplication factor.
+        """
+        for tr in self:
+            tr.multiply(factor=factor)
+        return self
+
+    def divide(self, factor):
+        """
+        In-place division of all Traces' data with a factor.
+
+        Simply applies :meth:`obspy.core.trace.Trace.divide` to all Traces.
+
+        :type factor: float
+        :param factor: The division factor.
+        """
+        for tr in self:
+            tr.divide(factor=factor)
+        return self
+
     def append(self, trace):
         """
         Append a single Trace object to the current Stream object.
