@@ -701,7 +701,37 @@ class ProvenanceTestCase(unittest.TestCase):
                     'spline_degree': 2,
                     'type': 'seis_prov:integrate'})
 
+    def test_multiply(self):
+        """
+        Tests provenance tracking for the Trace.multiply() method.
+        """
+        tr = obspy.read()[0]
+        tr.multiply(2.5)
+        doc = tr.stats.provenance
+        doc.validate()
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+                self._map_attributes(self._filter_records_label(
+                        doc, "Multiply")[0]), {
+                    'label': 'Multiply',
+                    'factor': 2.5,
+                    'type': 'seis_prov:multiply'})
 
+    def test_divide(self):
+        """
+        Tests provenance tracking for the Trace.divide() method.
+        """
+        tr = obspy.read()[0]
+        tr.divide(3.5)
+        doc = tr.stats.provenance
+        doc.validate()
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+                self._map_attributes(self._filter_records_label(
+                        doc, "Divide")[0]), {
+                    'label': 'Divide',
+                    'divisor': 3.5,
+                    'type': 'seis_prov:divide'})
 
         # def test_processing_information(self):
     #     """

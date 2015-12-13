@@ -396,7 +396,7 @@ def _extract_multiply(info, state_before, state_after):
 def _extract_divide(info, state_before, state_after):
     name = "divide"
     attributes = {
-        "factor": info["arguments"]["factor"]
+        "divisor": info["arguments"]["factor"]
     }
     return [(name, attributes, state_after)]
 
