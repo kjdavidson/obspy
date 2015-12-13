@@ -380,7 +380,7 @@ def _extract_filter(info, state_before, state_after):
 def _extract_normalize(info, state_before, state_after):
     name = "normalize"
     attributes = {
-        "normalization_method": "Amplitude"
+        "normalization_method": "amplitude"
     }
     return [(name, attributes, state_after)]
 

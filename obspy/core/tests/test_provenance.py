@@ -733,6 +733,22 @@ class ProvenanceTestCase(unittest.TestCase):
                     'divisor': 3.5,
                     'type': 'seis_prov:divide'})
 
+    def test_normalize(self):
+        """
+        Tests provenance tracking the for the Trace.normalize() method.
+        """
+        tr = obspy.read()[0]
+        tr.normalize()
+        doc = tr.stats.provenance
+        doc.validate()
+        self._assert_has_obspy_agent(doc)
+        self.assertEqual(
+                self._map_attributes(self._filter_records_label(
+                        doc, "Normalize")[0]), {
+                    'label': 'Normalize',
+                    'normalization_method': 'amplitude',
+                    'type': 'seis_prov:normalize'})
+
         # def test_processing_information(self):
     #     """
     #     Test case for the automatic processing information.
