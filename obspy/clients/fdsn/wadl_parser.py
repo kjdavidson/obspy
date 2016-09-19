@@ -42,6 +42,10 @@ class WADLParser(object):
             self._wadl_type = "station"
         elif "event" in url:
             self._wadl_type = "event"
+        # XXX: The eida routing service currently has the wrong URL in the
+        # file.
+        elif "routing" in url:
+            self._wadl_type = "eida_routing"
         else:
             raise NotImplementedError
         self._default_parameters = DEFAULT_PARAMETERS[self._wadl_type]
@@ -162,7 +166,12 @@ class WADLParser(object):
             if param_type == bool:
                 default_value = self._convert_boolean(default_value)
             else:
-                default_value = param_type(default_value)
+                # XXX: Temporary hack for the faulty eida routing wadl file.
+                if param_type is UTCDateTime and default_value == "tomorrow":
+                    default_value  = \
+                        UTCDateTime((UTCDateTime() + 86400).date)
+                else:
+                    default_value = param_type(default_value)
 
         # Parse any possible options.
         options = []

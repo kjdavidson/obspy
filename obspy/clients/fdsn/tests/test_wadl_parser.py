@@ -505,6 +505,15 @@ class WADLParserTestCase(unittest.TestCase):
         self.assertEqual(sorted(params.keys()), expected)
         self.assertEqual(len(w), 0)
 
+    def test_parsing_eida_routing_wadl(self):
+        parser, w = self._parse_wadl_file("eida_routing.wadl")
+        params = parser.parameters
+        # Check parsed parameters
+        expected = ['channel', 'endtime', 'format', 'location', 'network',
+                    'service', 'starttime', 'station']
+        self.assertEqual(sorted(params.keys()), expected)
+        self.assertEqual(len(w), 0)
+
 
 def suite():
     return unittest.makeSuite(WADLParserTestCase, 'test')
