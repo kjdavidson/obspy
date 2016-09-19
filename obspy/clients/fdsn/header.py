@@ -97,10 +97,15 @@ OPTIONAL_EVENT_PARAMETERS = [
     "includeallorigins", "includeallmagnitudes", "includearrivals", "eventid",
     "limit", "offset", "catalog", "contributor", "updatedafter"]
 
+DEFAULT_EIDA_ROUTING_PARAMETERS = [
+  "service", "starttime", "endtime", "network", "station", "location",
+  "channel", "format"]
+
 DEFAULT_PARAMETERS = {
     "dataselect": DEFAULT_DATASELECT_PARAMETERS,
     "event": DEFAULT_EVENT_PARAMETERS,
-    "station": DEFAULT_STATION_PARAMETERS}
+    "station": DEFAULT_STATION_PARAMETERS,
+    "eida_routing": DEFAULT_EIDA_ROUTING_PARAMETERS}
 
 OPTIONAL_PARAMETERS = {
     "dataselect": OPTIONAL_DATASELECT_PARAMETERS,

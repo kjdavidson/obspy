@@ -19,6 +19,7 @@ import collections
 import copy
 import gzip
 import io
+import json
 import os
 import re
 from socket import timeout as socket_timeout
@@ -134,7 +135,8 @@ class Client(object):
 
     def __init__(self, base_url="IRIS", major_versions=None, user=None,
                  password=None, user_agent=DEFAULT_USER_AGENT, debug=False,
-                 timeout=120, service_mappings=None, force_redirect=False):
+                 timeout=120, service_mappings=None, force_redirect=False,
+                 routing=None):
         """
         Initializes an FDSN Web Service client.
 
@@ -215,6 +217,15 @@ class Client(object):
             raise ValueError(msg)
 
         self.base_url = base_url
+
+        # Set routing.
+        supported_routers = ["eida"]
+        if routing and routing.lower() not in supported_routers:
+            msg = "Invalid routing '%s'. Supported routing services: %s" % (
+                routing, ", ".join(["'%s'" % _i
+                                    for _i in supported_routers]))
+            raise ValueError(msg)
+        self.routing = routing.lower() if routing else None
 
         # Only add the authentication handler if required.
         handlers = []
@@ -389,7 +400,7 @@ class Client(object):
         url = self._create_url_from_parameters(
             "event", DEFAULT_PARAMETERS['event'], kwargs)
 
-        data_stream = self._download(url)
+        data_stream = self._download(url)[0]
         data_stream.seek(0, 0)
         if filename:
             self._write_to_file_object(filename, data_stream)
@@ -587,15 +598,24 @@ class Client(object):
         url = self._create_url_from_parameters(
             "station", DEFAULT_PARAMETERS['station'], kwargs)
 
-        data_stream = self._download(url)
-        data_stream.seek(0, 0)
+        data_streams = self._download(url)
+        for _s in data_streams:
+            _s.seek(0, 0)
+
         if filename:
-            self._write_to_file_object(filename, data_stream)
-            data_stream.close()
+            self._write_to_file_object(filename, data_streams)
         else:
-            # This works with XML and StationXML data.
-            inventory = read_inventory(data_stream)
-            data_stream.close()
+            inventory = None
+
+            for _s in data_streams:
+                # This works with XML and StationXML data.
+                inv = read_inventory(_s)
+                _s.close()
+                if inventory is None:
+                    inventory = inv
+                else:
+                    inventory += inv
+
             return inventory
 
     def get_waveforms(self, network, station, location, channel, starttime,
@@ -706,14 +726,19 @@ class Client(object):
 
         # Gzip not worth it for MiniSEED and most likely disabled for this
         # route in any case.
-        data_stream = self._download(url, use_gzip=False)
-        data_stream.seek(0, 0)
+        data_streams = self._download(url, use_gzip=False)
+        for _s in data_streams:
+            _s.seek(0, 0)
+
         if filename:
-            self._write_to_file_object(filename, data_stream)
-            data_stream.close()
+            self._write_to_file_object(filename, data_streams)
+            for _s in data_streams:
+                _s.close()
         else:
-            st = obspy.read(data_stream, format="MSEED")
-            data_stream.close()
+            st = obspy.Stream()
+            for _s in data_streams:
+                st += obspy.read(_s, format="MSEED")
+                _s.close()
             if attach_response:
                 self._attach_responses(st)
             return st
@@ -1083,12 +1108,14 @@ class Client(object):
                 raise NotImplementedError(msg)
         return bulk
 
-    def _write_to_file_object(self, filename_or_object, data_stream):
+    def _write_to_file_object(self, filename_or_object, data_streams):
         if hasattr(filename_or_object, "write"):
-            filename_or_object.write(data_stream.read())
+            for _s in data_streams:
+                filename_or_object.write(_s.read())
             return
         with open(filename_or_object, "wb") as fh:
-            fh.write(data_stream.read())
+            for _s in data_streams:
+                fh.write(_s.read())
 
     def _create_url_from_parameters(self, service, default_params, parameters):
         """
@@ -1296,7 +1323,63 @@ class Client(object):
 
         print("\n".join(msg))
 
-    def _download(self, url, return_string=False, data=None, use_gzip=True):
+    def _get_eida_routing(self, url):
+        url = urllib.parse.urlparse(url)
+
+        # Force JSON for now - if some implementations don't support JSON
+        # we'll have to resort to XML eventually.
+        params = {"format": "json"}
+        other_params = {}
+
+        # Get the service and the parameters.
+        m = re.search(r"\/fdsnws\/(\w+)\/1\/query", url.path)
+        params["service"] = m.group(1)
+        all_params = urllib.parse.parse_qs(url.query)
+
+        routing_params = ("starttime", "endtime", "network", "station",
+                          "location", "channel")
+        for k, v in all_params.items():
+            if k in routing_params:
+                params[k] = v[0]
+            else:
+                other_params[k] = v[0]
+
+        # Build the routing url.
+        r_url = "/".join((self.base_url, "eidaws", "routing", "1", "query"))
+        url = "?".join((r_url, urllib.parse.urlencode(params)))
+
+        d = self._download(url=url, return_string=False, data=None,
+                           use_gzip=True, force_no_routing=True)[0]
+
+        routing = json.loads(d.read().decode())
+
+        # Now just build a list of URLs to download and off we go!
+        url_list = []
+        for provider in routing:
+            for p in provider["params"]:
+                del p["priority"]
+                p.update(other_params)
+                url_list.append("?".join((provider["url"],
+                                          urllib.parse.urlencode(p))))
+
+        return url_list
+
+    def _download_routed(self, url, return_string, data, use_gzip):
+        if self.routing == "eida":
+            url_list = self._get_eida_routing(url)
+        else:
+            raise NotImplementedError
+
+        print(url_list)
+        return [self._download(_i, return_string=return_string, data=data,
+                               use_gzip=use_gzip, force_no_routing=True)
+                for _i in url_list]
+
+    def _download(self, url, return_string=False, data=None, use_gzip=True,
+                  force_no_routing=False):
+        if self.routing and not force_no_routing:
+            self._download_routed(url=url, return_string=return_string,
+                                  data=data, use_gzip=use_gzip)
         code, data = download_url(
             url, opener=self._url_opener, headers=self.request_headers,
             debug=self.debug, return_string=return_string, data=data,
@@ -1343,7 +1426,7 @@ class Client(object):
         # Catch any non 200 codes.
         elif code != 200:
             raise FDSNException("Unknown HTTP code: %i" % code, server_info)
-        return data
+        return [data]
 
     def _build_url(self, service, resource_type, parameters={}):
         """
@@ -1377,6 +1460,11 @@ class Client(object):
         if "event" in services:
             urls.append(self._build_url("event", "catalogs"))
             urls.append(self._build_url("event", "contributors"))
+
+        # Check if the routing is available if desired.
+        if self.routing == "eida":
+            urls.append("/".join((self.base_url, "eidaws", "routing", "1",
+                                  "application.wadl")))
 
         # Access cache if available.
         url_hash = frozenset(urls)
@@ -1472,6 +1560,10 @@ class Client(object):
                 except ValueError:
                     msg = "Could not parse the contributors at '%s'." % url
                     warnings.warn(msg)
+            elif "eidaws" in url:
+                self.services["eida_routing"] = WADLParser(wadl).parameters
+                if self.debug is True:
+                    print("Discovered EIDA routing service")
         if not self.services:
             if redirect_messages:
                 raise FDSNRedirectException(", ".join(redirect_messages))
@@ -1480,6 +1572,15 @@ class Client(object):
                    "be due to a temporary service outage or an invalid FDSN "
                    "service address." % self.base_url)
             raise FDSNException(msg)
+
+        # Make sure the corresponding routing service has been discovered,
+        # if requested.
+        if self.routing == "eida" and "eida_routing" not in self.services:
+            msg = ("Initialized client with EIDA routing but the given end "
+                   "point does not appear to have an EIDA routing service. "
+                   "Either make sure the URL is correct or turn off "
+                   "routing.")
+            raise ValueError(msg)
 
         # Cache.
         if self.debug is True:
