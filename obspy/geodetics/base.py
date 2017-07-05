@@ -145,7 +145,10 @@ matplotlib/files/matplotlib-toolkits/basemap-0.9.5/
             sigma = math.atan2(sin_sigma, cos_sigma)
             sin_alpha = math.cos(u_1) * math.cos(u_2) * math.sin(dlon) / \
                 math.sin(sigma)
-            alpha = math.asin(sin_alpha)
+            try:
+                alpha = math.asin(sin_alpha)
+            except ValueError:
+                raise StopIteration
             cos2sigma_m = math.cos(sigma) - \
                 (2 * math.sin(u_1) * math.sin(u_2) / pow(math.cos(alpha), 2))
             c = (f / 16) * pow(math.cos(alpha), 2) * \
