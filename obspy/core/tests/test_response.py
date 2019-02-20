@@ -275,8 +275,20 @@ class ResponseTestCase(unittest.TestCase):
         inv = read_inventory(os.path.join(
             self.data_dir, "stationxml_no_units_in_stage_1.xml"))
         r = inv[0][0][0].response
-        self.assertIsNone(r.response_stages[0].input_units)
-        self.assertIsNone(r.response_stages[0].output_units)
+
+        # The units should already have been fixed from reading the StationXML
+        # files...
+        self.assertEqual(r.response_stages[0].input_units, "M/S")
+        self.assertEqual(r.response_stages[0].input_units_description,
+                         "Meters per second")
+        self.assertEqual(r.response_stages[0].output_units, "V")
+        self.assertEqual(r.response_stages[0].output_units_description,
+                         "VOLTS")
+
+        # We have to set the units to None here as there is some other logic in
+        # reading the StationXML files that sets them based on other units...
+        r.response_stages[0].input_units = None
+        r.response_stages[0].output_units = None
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -453,6 +465,23 @@ class ResponseTestCase(unittest.TestCase):
             [6.27191825e+08 + 1.38925202e+08j,
              6.51826202e+08 + 1.28404787e+07j,
              2.00067263e+04 - 2.63711751e+03j])
+
+    def test_regression_evalresp(self):
+        """
+        Regression test for an evalresp issue with a micropressure instrument.
+
+        See #2171.
+        """
+        inv = read_inventory(os.path.join(self.data_dir, "IM_I53H1_BDF.xml"))
+        self.assertEqual(
+            inv[0][0][0].response.get_evalresp_response_for_frequencies([0.0]),
+            0.0 + 0.0j)
+        np.testing.assert_allclose(
+            inv[0][0][0].response.get_evalresp_response_for_frequencies(
+                [0.1, 1.0, 10.0]),
+            [2.411908e+05 + 2.283852e+04j,
+             2.445572e+05 - 2.480459e+03j,
+             -2.455459e-01 + 4.888214e-02j], rtol=1e-6)
 
 
 def suite():

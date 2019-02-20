@@ -105,8 +105,9 @@ class Inventory(ComparingObject):
 
     In essence just a container for one or more networks.
     """
-    def __init__(self, networks, source, sender=None, created=None,
-                 module=SOFTWARE_MODULE, module_uri=SOFTWARE_URI):
+    def __init__(self, networks=None, source=SOFTWARE_MODULE, sender=None,
+                 created=None, module=SOFTWARE_MODULE,
+                 module_uri=SOFTWARE_URI):
         """
         :type networks: list of
             :class:`~obspy.core.inventory.network.Network`
@@ -132,7 +133,7 @@ class Inventory(ComparingObject):
             StationXML standard and how to output it to StationXML
             see the :ref:`ObsPy Tutorial <stationxml-extra>`.
         """
-        self.networks = networks
+        self.networks = networks if networks is not None else []
         self.source = source
         self.sender = sender
         self.module = module
@@ -460,7 +461,7 @@ class Inventory(ComparingObject):
     def select(self, network=None, station=None, location=None, channel=None,
                time=None, starttime=None, endtime=None, sampling_rate=None,
                keep_empty=False):
-        """
+        r"""
         Return a copy of the inventory filtered on various parameters.
 
         Returns the :class:`Inventory` object with only the
@@ -560,7 +561,7 @@ class Inventory(ComparingObject):
 
     def remove(self, network='*', station='*', location='*', channel='*',
                keep_empty=False):
-        """
+        r"""
         Return a copy of the inventory with selected elements removed.
 
         Returns the :class:`Inventory` object but excluding the
