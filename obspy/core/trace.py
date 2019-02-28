@@ -2980,7 +2980,7 @@ seismometer_correction_simulation.html#using-a-resp-file>`_.
         self.data = data
         return self
 
-    @_add_processing_info
+    @track_provenance
     def remove_sensitivity(self, inventory=None):
         """
         Remove instrument sensitivity.
